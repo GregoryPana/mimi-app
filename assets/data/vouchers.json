@@ -1,0 +1,17 @@
+[
+  {
+    "id": "voucher-meal",
+    "title": "1 Free BBQ 🍖",
+    "description": "Redeem for me to sponsor one BBQ meal."
+  },
+  {
+    "id": "voucher-mcd",
+    "title": "2 Free McD 🍔🍟",
+    "description": "Redeem for two McD treats with me."
+  },
+  {
+    "id": "voucher-hairdo",
+    "title": "1 Free Hairdo 💇‍♀️",
+    "description": "Redeem for me to sponsor your hair appointment."
+  }
+]
