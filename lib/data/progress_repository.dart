@@ -8,18 +8,25 @@ class ProgressRepository {
   static const _keyRedeemedVoucherIds = 'redeemedVoucherIds';
   static const _keyGalleryIntroSeen = 'galleryIntroSeen';
   static const _keyLastLetterViewedDate = 'lastLetterViewedDate';
+  static const _keyLastViewedComicId = 'lastViewedComicId';
+  static const _keyLastComicPage = 'lastComicPage';
+  static const _keyLastViewedGalleryFolder = 'lastViewedGalleryFolder';
+  static const _keyLastViewedSection = 'lastViewedSection';
+  static const _keyFavoriteIds = 'favoriteIds';
 
   Future<AppProgressState> load() async {
     final prefs = await SharedPreferences.getInstance();
     final timelineCompleted = prefs.getBool(_keyTimelineCompleted) ?? false;
     final galleryViewedIds = prefs.getStringList(_keyGalleryViewedIds) ?? <String>[];
     final redeemedVoucherIds = prefs.getStringList(_keyRedeemedVoucherIds) ?? <String>[];
+    final favoriteIds = prefs.getStringList(_keyFavoriteIds) ?? <String>[];
 
     return AppProgressState(
       timelineCompleted: timelineCompleted,
       galleryViewedIds: galleryViewedIds.toSet(),
       galleryCompleted: false,
       redeemedVoucherIds: redeemedVoucherIds.toSet(),
+      favoriteIds: favoriteIds.toSet(),
     );
   }
 
@@ -28,6 +35,7 @@ class ProgressRepository {
     await prefs.setBool(_keyTimelineCompleted, state.timelineCompleted);
     await prefs.setStringList(_keyGalleryViewedIds, state.galleryViewedIds.toList());
     await prefs.setStringList(_keyRedeemedVoucherIds, state.redeemedVoucherIds.toList());
+    await prefs.setStringList(_keyFavoriteIds, state.favoriteIds.toList());
   }
 
   Future<bool> getGalleryIntroSeen() async {
@@ -48,5 +56,44 @@ class ProgressRepository {
   Future<void> setLastLetterViewedDate(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyLastLetterViewedDate, value);
+  }
+
+  // ── Continue-tracking: Comics ──────────────────────────
+  Future<String?> getLastViewedComicId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyLastViewedComicId);
+  }
+
+  Future<int> getLastComicPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyLastComicPage) ?? 0;
+  }
+
+  Future<void> setLastViewedComic(String comicId, int page) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLastViewedComicId, comicId);
+    await prefs.setInt(_keyLastComicPage, page);
+  }
+
+  // ── Continue-tracking: Gallery ─────────────────────────
+  Future<String?> getLastViewedGalleryFolder() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyLastViewedGalleryFolder);
+  }
+
+  Future<void> setLastViewedGalleryFolder(String folder) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLastViewedGalleryFolder, folder);
+  }
+
+  // ── Continue-tracking: Last section visited ────────────
+  Future<String?> getLastViewedSection() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyLastViewedSection);
+  }
+
+  Future<void> setLastViewedSection(String section) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLastViewedSection, section);
   }
 }

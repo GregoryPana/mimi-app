@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'home_screen.dart';
+import '../navigation/app_shell.dart';
 
 class HeartTransitionScreen extends StatefulWidget {
   const HeartTransitionScreen({super.key});
@@ -24,7 +24,7 @@ class _HeartTransitionScreenState extends State<HeartTransitionScreen>
     _controller.forward().whenComplete(() {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const AppShell()),
       );
     });
   }

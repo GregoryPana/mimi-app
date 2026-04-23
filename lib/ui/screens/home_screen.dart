@@ -1,20 +1,22 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../app/notification_service.dart';
 import '../../app/providers.dart';
-import '../../domain/valentines_logic.dart';
+import '../../core/constants/app_config.dart';
+import '../../core/utils/date_helpers.dart';
+import '../../domain/entities.dart';
 import '../theme.dart';
-import '../widgets/animated_gradient_background.dart';
-import '../widgets/pastel_card.dart';
-import '../widgets/secondary_button.dart';
-import '../widgets/status_pill.dart';
+import '../widgets/continue_card.dart';
+import '../widgets/featured_memory_card.dart';
+import '../widgets/mood_selector.dart';
+import '../widgets/quick_action_tile.dart';
+import '../widgets/section_header.dart';
+import '../widgets/today_card.dart';
 import 'comics_screen.dart';
 import 'gallery_screen.dart';
-import 'surprise_gift_screen.dart';
+
 import 'timeline_screen.dart';
 import 'valentines_screen.dart';
 
@@ -29,397 +31,354 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(progressControllerProvider.notifier).scheduleLetterReminder(DateTime.now());
-      ref.read(progressControllerProvider.notifier).scheduleValentinesReminder(DateTime.now());
-    });
+    _initNotifications();
+  }
+
+  Future<void> _initNotifications() async {
+    try {
+      await NotificationService.instance.init();
+      final now = DateTime.now();
+      final controller = ref.read(progressControllerProvider.notifier);
+      await controller.scheduleLetterReminder(now);
+      await controller.scheduleValentinesReminder(now);
+    } catch (_) {
+      // Notification setup is best-effort; don't block the app
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final contentAsync = ref.watch(contentProvider);
     final progressAsync = ref.watch(progressControllerProvider);
-    final now = DateTime.now();
-    final valentinesStatus = evaluateValentinesStatus(now);
-    final isAnniversary = now.month == 2 && now.day == 2;
-    final isValentines = now.month == 2 && now.day == 14;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('For Mimi'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
+      backgroundColor: AppColors.appBackground,
+      body: contentAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.pastelPink)),
+        error: (e, _) => Center(child: Text('Something went wrong 💔\n$e')),
+        data: (content) {
+          final progress = progressAsync.valueOrNull ?? AppProgressState.initial();
+          return _HomeBody(content: content, progress: progress);
+        },
       ),
-      body: AnimatedGradientBackground(
-        child: Stack(
-          children: [
-            const Positioned(
-              top: -120,
-              left: -80,
-              child: _GlowOrb(
-                size: 220,
-                colors: [Color(0x66FF8A80), Color(0x00FF8A80)],
-              ),
-            ),
-            const Positioned(
-              bottom: -160,
-              right: -80,
-              child: _GlowOrb(
-                size: 260,
-                colors: [Color(0x66B39DDB), Color(0x00B39DDB)],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                MediaQuery.of(context).padding.top + kToolbarHeight + 12,
-                20,
-                12,
-              ),
-              child: contentAsync.when(
-                data: (content) {
-                  return progressAsync.when(
-                    data: (progress) {
-                      final galleryTotal = content.gallery.length;
-                      final galleryViewed = progress.galleryViewedIds.length;
-                final progressUnlocked = progress.timelineCompleted && progress.galleryCompleted;
-                final now = DateTime.now();
-                final anniversaryDate = DateTime(now.year, 2, 2);
-                final dateUnlocked = !now.isBefore(anniversaryDate);
-                final giftUnlocked = progressUnlocked && dateUnlocked;
-                final daysUntilGift = dateUnlocked
-                    ? 0
-                    : anniversaryDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+    );
+  }
+}
 
-                      return ListView(
-                        padding: EdgeInsets.zero,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(18),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.25),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isValentines
-                                          ? 'Happy Valentine\'s Day my Smelly Girl!'
-                                          : isAnniversary
-                                              ? 'Happy Anniversary Smelly Girl!'
-                                              : 'Welcome back, Baby',
-                                      style: Theme.of(context).textTheme.titleLarge,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'A soft place for our memories.',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                      _HomeCard(
-                        icon: LucideIcons.image,
-                        title: 'Memory Gallery',
-                        subtitle: '$galleryViewed of $galleryTotal viewed',
-                            status: StatusPill(
-                              label: progress.galleryCompleted ? 'Completed' : 'In progress',
-                              background: progress.galleryCompleted ? AppColors.success : AppColors.pastelBlue,
-                            ),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const GalleryScreen()),
-                              );
-                            },
-                      ),
-                      const SizedBox(height: 14),
-                    _HomeCard(
-                      icon: LucideIcons.bookOpen,
-                      title: 'Comics',
-                      subtitle: '${content.comics.length} stories to read',
-                      status: const StatusPill(
-                        label: 'New',
-                        background: AppColors.pastelPeach,
-                      ),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ComicsScreen()),
-                        );
-                      },
+class _HomeBody extends ConsumerWidget {
+  const _HomeBody({required this.content, required this.progress});
+
+  final ContentData content;
+  final AppProgressState progress;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final daysTogether = DateHelpers.daysTogether(now);
+    final todayEvent = _findTodayEvent(content.timeline, now);
+    final featuredImage = _pickFeaturedImage(content.gallery, now);
+
+    return CustomScrollView(
+      slivers: [
+        // ── Top gradient background ──
+        SliverToBoxAdapter(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.pastelPink.withValues(alpha: 0.25),
+                  AppColors.appBackground,
+                ],
+                stops: const [0.0, 0.6],
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Section A: Welcome Header ──
+                    _buildWelcomeHeader(context, daysTogether),
+                    const SizedBox(height: 20),
+
+                    // ── Section B: Today in Our Story ──
+                    if (todayEvent != null) ...[
+                      _buildTodayCard(context, todayEvent, now),
+                      const SizedBox(height: 22),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // ── Remaining sections ──
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // ── Section C: Featured Memory ──
+              if (featuredImage != null) ...[
+                SectionHeader(icon: LucideIcons.star, label: 'Featured Memory'),
+                _buildFeaturedMemory(context, ref, featuredImage),
+                const SizedBox(height: 24),
+              ],
+
+              // ── Section D: Continue Where You Left Off ──
+              SectionHeader(icon: LucideIcons.clock, label: 'Continue where you left off'),
+              _buildContinueSection(context),
+              const SizedBox(height: 24),
+
+              // ── Section E: Quick Actions Grid ──
+              _buildQuickActionsGrid(context),
+              const SizedBox(height: 24),
+
+              // ── Section F: Mood Selector ──
+              const MoodSelector(),
+              const SizedBox(height: 32),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Section A ──────────────────────────────────────────────
+
+  Widget _buildWelcomeHeader(BuildContext context, int daysTogether) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome back,',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
                     ),
-                    const SizedBox(height: 14),
-                    _HomeCard(
-                      icon: LucideIcons.history,
-                      title: 'Our Timeline',
-                            subtitle: progress.timelineCompleted ? 'Story completed' : 'Continue our story',
-                            status: StatusPill(
-                              label: progress.timelineCompleted ? 'Completed' : 'In progress',
-                              background: progress.timelineCompleted ? AppColors.success : AppColors.pastelLavender,
-                            ),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const TimelineScreen()),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                      _HomeCard(
-                        icon: LucideIcons.gift,
-                        title: 'Surprise Gift',
-                      subtitle: giftUnlocked
-                          ? 'Open your surprise'
-                          : progressUnlocked
-                              ? 'Opens in $daysUntilGift days'
-                              : 'Complete gallery + timeline',
-                      status: StatusPill(
-                        label: giftUnlocked
-                            ? 'Unlocked'
-                            : progressUnlocked
-                                ? 'Waiting'
-                                : 'Locked',
-                        background: giftUnlocked
-                            ? AppColors.success
-                            : progressUnlocked
-                                ? AppColors.pastelPeach
-                                : AppColors.disabled,
-                      ),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SurpriseGiftScreen()),
-                        );
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          _HomeCard(
-                            icon: LucideIcons.heart,
-                            title: 'Valentine’s Mode',
-                            subtitle: valentinesStatus.isUnlocked
-                                ? 'Unlocked for today'
-                                : '${valentinesStatus.daysUntil} days to Feb 14',
-                            status: StatusPill(
-                              label: valentinesStatus.isUnlocked ? 'Unlocked' : 'Countdown',
-                              background: valentinesStatus.isUnlocked ? AppColors.success : AppColors.pastelPeach,
-                            ),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ValentinesScreen()),
-                        );
-                      },
+              ),
+              Text(
+                'Baby ❤️',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
                     ),
-                    const SizedBox(height: 14),
-                    _LinksCard(
-                      onOpenVideos: () => _openLink(
-                        'https://drive.google.com/drive/folders/1ZRhE56GaNFpg9YX7Gvm2_TN6yEN4DeUc',
-                      ),
-                      onOpenPhotos: () => _openLink(
-                        'https://drive.google.com/drive/folders/19keZduWmLdKdOWIfyS9aa5Kl0KZZUq9k',
-                      ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Day $daysTogether together ❤️',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.pastelPink,
+                      fontWeight: FontWeight.w500,
                     ),
-                        ],
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, _) => Text('Error: $error'),
+              ),
+            ],
+          ),
+        ),
+        // Settings gear
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.7),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: const Icon(LucideIcons.settings, size: 20),
+            color: AppColors.textSecondary,
+            onPressed: () {
+              // Future: open settings
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Section B ──────────────────────────────────────────────
+
+  Widget _buildTodayCard(BuildContext context, TimelineItem event, DateTime now) {
+    final parsed = DateHelpers.parseTimelineDate(event.date);
+    final relative = parsed != null ? DateHelpers.relativeTimeText(parsed, now) : '';
+
+    return TodayCard(
+      title: event.title,
+      relativeText: relative,
+      imageAsset: event.imageAsset,
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TimelineScreen()),
+        );
+      },
+    );
+  }
+
+  // ── Section C ──────────────────────────────────────────────
+
+  Widget _buildFeaturedMemory(BuildContext context, WidgetRef ref, GalleryItem item) {
+    final isFav = progress.favoriteIds.contains(item.id);
+    return FeaturedMemoryCard(
+      imageAsset: item.imageAsset,
+      caption: item.caption,
+      isFavorited: isFav,
+      onFavoriteTap: () {
+        ref.read(progressControllerProvider.notifier).toggleFavorite(item.id);
+      },
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const GalleryScreen()),
+        );
+      },
+    );
+  }
+
+  // ── Section D ──────────────────────────────────────────────
+
+  Widget _buildContinueSection(BuildContext context) {
+    // Show comics and gallery continue cards based on content availability
+    return Row(
+      children: [
+        Expanded(
+          child: ContinueCard(
+            title: 'Comics',
+            subtitle: 'Last read',
+            detail: content.comics.isNotEmpty ? content.comics.first.title.split('—').last.trim() : 'Start reading',
+            icon: LucideIcons.bookOpen,
+            backgroundColor: AppColors.pastelPeach,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ComicsScreen()),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ContinueCard(
+            title: 'Gallery',
+            subtitle: 'Last viewed',
+            detail: _lastGalleryFolder(),
+            icon: LucideIcons.image,
+            backgroundColor: AppColors.pastelLavender,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GalleryScreen()),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _lastGalleryFolder() {
+    // Determine which folder was viewed most recently based on viewed IDs
+    final seychellesCount = progress.galleryViewedIds.where((id) => id.startsWith('seychelles')).length;
+    final malaysiaCount = progress.galleryViewedIds.where((id) => id.startsWith('malaysia')).length;
+    if (malaysiaCount > seychellesCount) return 'Malaysia';
+    if (seychellesCount > 0) return 'Seychelles';
+    return 'Start exploring';
+  }
+
+  // ── Section E ──────────────────────────────────────────────
+
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: QuickActionTile(
+                icon: LucideIcons.image,
+                iconColor: AppColors.pastelLavender,
+                backgroundColor: AppColors.pastelLavender,
+                title: AppConfig.memoriesLabel,
+                subtitle: AppConfig.memoriesSubtitle,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const GalleryScreen()),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Text('Error: $error'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: QuickActionTile(
+                icon: LucideIcons.calendar,
+                iconColor: AppColors.pastelPeach,
+                backgroundColor: AppColors.pastelPeach,
+                title: AppConfig.timelineLabel,
+                subtitle: AppConfig.timelineSubtitle,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TimelineScreen()),
+                  );
+                },
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: QuickActionTile(
+                icon: LucideIcons.mail,
+                iconColor: AppColors.pastelPink,
+                backgroundColor: AppColors.pastelPink,
+                title: AppConfig.lettersLabel,
+                subtitle: AppConfig.lettersSubtitle,
+                onTap: () {
+                  // For now, navigate to Valentine's screen (letters)
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ValentinesScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: QuickActionTile(
+                icon: LucideIcons.bookOpen,
+                iconColor: AppColors.pastelMint,
+                backgroundColor: AppColors.pastelMint,
+                title: AppConfig.comicsLabel,
+                subtitle: AppConfig.comicsSubtitle,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ComicsScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
-}
 
-Future<void> _openLink(String url) async {
-  final uri = Uri.parse(url);
-  await launchUrl(uri, mode: LaunchMode.externalApplication);
-}
+  // ── Helpers ────────────────────────────────────────────────
 
-class _LinksCard extends StatelessWidget {
-  const _LinksCard({required this.onOpenVideos, required this.onOpenPhotos});
-
-  final VoidCallback onOpenVideos;
-  final VoidCallback onOpenPhotos;
-
-  @override
-  Widget build(BuildContext context) {
-    return PastelCard(
-      gradient: const LinearGradient(
-        colors: [Color(0xFFFFFBF4), Color(0xFFFFF7FA)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.pastelPeach,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(LucideIcons.link, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Links', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text('Seychelles folders', style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: SecondaryButton(
-                  label: 'Videos',
-                  onPressed: onOpenVideos,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SecondaryButton(
-                  label: 'Pictures',
-                  onPressed: onOpenPhotos,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  TimelineItem? _findTodayEvent(List<TimelineItem> items, DateTime now) {
+    for (final item in items) {
+      if (DateHelpers.matchesMonthDay(item.date, now)) {
+        return item;
+      }
+    }
+    return null;
   }
-}
 
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({required this.size, required this.colors});
-
-  final double size;
-  final List<Color> colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          gradient: RadialGradient(colors: colors),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeCard extends StatelessWidget {
-  const _HomeCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget status;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: const Color(0x33FF6B81),
-            blurRadius: 24,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: PastelCard(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFFCFE), Color(0xFFF7FBFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        child: InkWell(
-          onTap: onTap,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFC1CC), Color(0xFFDCC6FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: AppColors.textPrimary, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-              ),
-              status,
-            ],
-          ),
-        ),
-      ),
-    );
+  GalleryItem? _pickFeaturedImage(List<GalleryItem> items, DateTime now) {
+    if (items.isEmpty) return null;
+    final index = DateHelpers.dailyPickIndex(items.length, now);
+    return items[index];
   }
 }

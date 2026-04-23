@@ -62,6 +62,19 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
     await ref.read(progressRepositoryProvider).save(next);
   }
 
+  Future<void> toggleFavorite(String id) async {
+    final current = state.value ?? AppProgressState.initial();
+    final updated = {...current.favoriteIds};
+    if (updated.contains(id)) {
+      updated.remove(id);
+    } else {
+      updated.add(id);
+    }
+    final next = current.copyWith(favoriteIds: updated);
+    state = AsyncData(next);
+    await ref.read(progressRepositoryProvider).save(next);
+  }
+
   Future<bool> showGalleryIntroIfNeeded() async {
     final repo = ref.read(progressRepositoryProvider);
     final seen = await repo.getGalleryIntroSeen();

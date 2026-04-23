@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../core/constants/app_config.dart';
 import '../theme.dart';
 import '../widgets/animated_gradient_background.dart';
 import '../widgets/pastel_card.dart';
@@ -16,24 +17,25 @@ class PasscodeScreen extends StatefulWidget {
 }
 
 class _PasscodeScreenState extends State<PasscodeScreen> {
-  static const _passcode = '2222';
+  static const _passcode = AppConfig.passcode;
+  static final _passcodeLength = _passcode.length;
   final List<int> _digits = [];
   String? _error;
 
   void _addDigit(int digit) {
-    if (_digits.length >= 4) return;
+    if (_digits.length >= _passcodeLength) return;
     setState(() {
       _digits.add(digit);
       _error = null;
     });
-    if (_digits.length == 4) {
+    if (_digits.length == _passcodeLength) {
       final entered = _digits.join();
       if (entered == _passcode) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HeartTransitionScreen()),
         );
       } else {
-        setState(() => _error = 'Not quite 😄 try again, baby.');
+        setState(() => _error = AppConfig.passcodeError);
         Timer(const Duration(milliseconds: 700), () {
           if (!mounted) return;
           setState(() => _digits.clear());
@@ -62,7 +64,7 @@ class _PasscodeScreenState extends State<PasscodeScreen> {
               children: [
                 Text('Welcome back, Mimi', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
-                Text('Hint: 02/02/2022 ❤️', style: Theme.of(context).textTheme.bodyMedium),
+                Text(AppConfig.passcodeHint, style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 24),
                 PastelCard(
                   child: Column(
@@ -71,7 +73,7 @@ class _PasscodeScreenState extends State<PasscodeScreen> {
                       const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(4, (index) {
+                      children: List.generate(_passcodeLength, (index) {
                           final filled = index < _digits.length;
                           return Container(
                             margin: const EdgeInsets.symmetric(horizontal: 6),

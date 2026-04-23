@@ -107,24 +107,28 @@ class AppProgressState {
     required this.galleryViewedIds,
     required this.galleryCompleted,
     required this.redeemedVoucherIds,
+    this.favoriteIds = const <String>{},
   });
 
   final bool timelineCompleted;
   final Set<String> galleryViewedIds;
   final bool galleryCompleted;
   final Set<String> redeemedVoucherIds;
+  final Set<String> favoriteIds;
 
   AppProgressState copyWith({
     bool? timelineCompleted,
     Set<String>? galleryViewedIds,
     bool? galleryCompleted,
     Set<String>? redeemedVoucherIds,
+    Set<String>? favoriteIds,
   }) {
     return AppProgressState(
       timelineCompleted: timelineCompleted ?? this.timelineCompleted,
       galleryViewedIds: galleryViewedIds ?? this.galleryViewedIds,
       galleryCompleted: galleryCompleted ?? this.galleryCompleted,
       redeemedVoucherIds: redeemedVoucherIds ?? this.redeemedVoucherIds,
+      favoriteIds: favoriteIds ?? this.favoriteIds,
     );
   }
 
@@ -134,6 +138,7 @@ class AppProgressState {
       galleryViewedIds: <String>{},
       galleryCompleted: false,
       redeemedVoucherIds: <String>{},
+      favoriteIds: <String>{},
     );
   }
 }
