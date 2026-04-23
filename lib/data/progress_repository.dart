@@ -20,6 +20,10 @@ class ProgressRepository {
     final galleryViewedIds = prefs.getStringList(_keyGalleryViewedIds) ?? <String>[];
     final redeemedVoucherIds = prefs.getStringList(_keyRedeemedVoucherIds) ?? <String>[];
     final favoriteIds = prefs.getStringList(_keyFavoriteIds) ?? <String>[];
+    final lastViewedComicId = prefs.getString(_keyLastViewedComicId);
+    final lastComicPage = prefs.getInt(_keyLastComicPage) ?? 0;
+    final lastViewedGalleryFolder = prefs.getString(_keyLastViewedGalleryFolder);
+    final lastViewedSection = prefs.getString(_keyLastViewedSection);
 
     return AppProgressState(
       timelineCompleted: timelineCompleted,
@@ -27,6 +31,10 @@ class ProgressRepository {
       galleryCompleted: false,
       redeemedVoucherIds: redeemedVoucherIds.toSet(),
       favoriteIds: favoriteIds.toSet(),
+      lastViewedComicId: lastViewedComicId,
+      lastViewedComicPage: lastComicPage,
+      lastViewedGalleryFolder: lastViewedGalleryFolder,
+      lastViewedSection: lastViewedSection,
     );
   }
 
@@ -36,6 +44,16 @@ class ProgressRepository {
     await prefs.setStringList(_keyGalleryViewedIds, state.galleryViewedIds.toList());
     await prefs.setStringList(_keyRedeemedVoucherIds, state.redeemedVoucherIds.toList());
     await prefs.setStringList(_keyFavoriteIds, state.favoriteIds.toList());
+    if (state.lastViewedComicId != null) {
+      await prefs.setString(_keyLastViewedComicId, state.lastViewedComicId!);
+    }
+    await prefs.setInt(_keyLastComicPage, state.lastViewedComicPage);
+    if (state.lastViewedGalleryFolder != null) {
+      await prefs.setString(_keyLastViewedGalleryFolder, state.lastViewedGalleryFolder!);
+    }
+    if (state.lastViewedSection != null) {
+      await prefs.setString(_keyLastViewedSection, state.lastViewedSection!);
+    }
   }
 
   Future<bool> getGalleryIntroSeen() async {

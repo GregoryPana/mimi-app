@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -19,6 +20,7 @@ import 'gallery_screen.dart';
 
 import 'timeline_screen.dart';
 import 'letters_screen.dart';
+import 'seychelles_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -130,12 +132,12 @@ class _HomeBody extends ConsumerWidget {
               ],
 
               // ── Section D: Continue Where You Left Off ──
-              SectionHeader(icon: LucideIcons.clock, label: 'Continue where you left off'),
+              SectionHeader(icon: LucideIcons.clock, label: 'Continue reading'),
               _buildContinueSection(context),
               const SizedBox(height: 24),
 
               // ── Section E: Quick Actions Grid ──
-              _buildQuickActionsGrid(context),
+              _buildQuickActionsGrid(context, ref),
               const SizedBox(height: 24),
 
               // ── Section F: Mood Selector ──
@@ -173,30 +175,27 @@ class _HomeBody extends ConsumerWidget {
                     ),
               ),
               const SizedBox(height: 4),
-              Text(
-                'Day $daysTogether together ❤️',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.pastelPink,
-                      fontWeight: FontWeight.w500,
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Day $daysTogether together ❤️ ',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.pastelPink,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
+                    TextSpan(
+                      text: '(${DateHelpers.detailedDurationTogether(DateTime.now())})',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
-        ),
-        // Settings gear
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: const Icon(LucideIcons.settings, size: 20),
-            color: AppColors.textSecondary,
-            onPressed: () {
-              // Future: open settings
-            },
           ),
         ),
       ],
@@ -243,54 +242,57 @@ class _HomeBody extends ConsumerWidget {
   // ── Section D ──────────────────────────────────────────────
 
   Widget _buildContinueSection(BuildContext context) {
-    // Show comics and gallery continue cards based on content availability
-    return Row(
-      children: [
-        Expanded(
-          child: ContinueCard(
-            title: 'Comics',
-            subtitle: 'Last read',
-            detail: content.comics.isNotEmpty ? content.comics.first.title.split('—').last.trim() : 'Start reading',
-            icon: LucideIcons.bookOpen,
-            backgroundColor: AppColors.pastelPeach,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ComicsScreen()),
-              );
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ContinueCard(
-            title: 'Gallery',
-            subtitle: 'Last viewed',
-            detail: _lastGalleryFolder(),
-            icon: LucideIcons.image,
-            backgroundColor: AppColors.pastelLavender,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const GalleryScreen()),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+    if (progress.lastViewedSection == 'gallery') {
+      final folder = progress.lastViewedGalleryFolder;
+      return ContinueCard(
+        title: 'Memories',
+        subtitle: folder ?? 'Photo Gallery',
+        detail: folder != null ? 'Resume viewing folder' : 'Discover memories',
+        icon: LucideIcons.image,
+        backgroundColor: AppColors.pastelLavender,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const GalleryScreen()),
+          );
+        },
+      ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideX(begin: 0.05, end: 0);
+    }
 
-  String _lastGalleryFolder() {
-    // Determine which folder was viewed most recently based on viewed IDs
-    final seychellesCount = progress.galleryViewedIds.where((id) => id.startsWith('seychelles')).length;
-    final malaysiaCount = progress.galleryViewedIds.where((id) => id.startsWith('malaysia')).length;
-    if (malaysiaCount > seychellesCount) return 'Malaysia';
-    if (seychellesCount > 0) return 'Seychelles';
-    return 'Start exploring';
+    final lastComicId = progress.lastViewedComicId;
+    final lastComicPage = progress.lastViewedComicPage;
+    final lastComic = lastComicId != null 
+      ? content.comics.cast<ComicItem?>().firstWhere((c) => c?.id == lastComicId, orElse: () => null)
+      : null;
+
+    final comicTitle = lastComic?.title.split('—').last.trim() ?? 'Start reading';
+    final comicDetail = lastComicId != null ? 'Page ${lastComicPage + 1}' : 'Discover story';
+
+    return ContinueCard(
+      title: 'Comics',
+      subtitle: comicTitle,
+      detail: comicDetail,
+      icon: LucideIcons.bookOpen,
+      backgroundColor: AppColors.pastelPeach,
+      onTap: () {
+        if (lastComic != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => ComicViewerScreen(item: lastComic, initialPage: lastComicPage)),
+          );
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ComicsScreen()),
+          );
+        }
+      },
+    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideX(begin: 0.05, end: 0);
   }
 
   // ── Section E ──────────────────────────────────────────────
 
-  Widget _buildQuickActionsGrid(BuildContext context) {
+  Widget _buildQuickActionsGrid(BuildContext context, WidgetRef ref) {
+    bool isFav(String id) => progress.favoriteIds.contains(id);
+    void toggle(String id) => ref.read(progressControllerProvider.notifier).toggleFavorite(id);
+
     return Column(
       children: [
         Row(
@@ -302,6 +304,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelLavender,
                 title: AppConfig.memoriesLabel,
                 subtitle: AppConfig.memoriesSubtitle,
+                isFavorite: isFav('gallery_action'),
+                onFavoriteToggle: () => toggle('gallery_action'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const GalleryScreen()),
@@ -317,6 +321,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelPeach,
                 title: AppConfig.timelineLabel,
                 subtitle: AppConfig.timelineSubtitle,
+                isFavorite: isFav('timeline_action'),
+                onFavoriteToggle: () => toggle('timeline_action'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const TimelineScreen()),
@@ -336,6 +342,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelPink,
                 title: AppConfig.lettersLabel,
                 subtitle: AppConfig.lettersSubtitle,
+                isFavorite: isFav('letters_action'),
+                onFavoriteToggle: () => toggle('letters_action'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const LettersScreen()),
@@ -351,9 +359,32 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelMint,
                 title: AppConfig.comicsLabel,
                 subtitle: AppConfig.comicsSubtitle,
+                isFavorite: isFav('comics_action'),
+                onFavoriteToggle: () => toggle('comics_action'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const ComicsScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: QuickActionTile(
+                icon: LucideIcons.plane,
+                iconColor: AppColors.pastelBlue,
+                backgroundColor: AppColors.pastelBlue,
+                title: AppConfig.seychellesLabel,
+                subtitle: AppConfig.seychellesSubtitle,
+                isFavorite: isFav('seychelles_action'),
+                onFavoriteToggle: () => toggle('seychelles_action'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SeychellesScreen()),
                   );
                 },
               ),

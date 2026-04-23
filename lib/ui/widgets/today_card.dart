@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme.dart';
 
@@ -21,7 +23,10 @@ class TodayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        if (onTap != null) onTap!();
+      },
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -105,6 +110,6 @@ class TodayCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ).animate().scale(delay: 100.ms, begin: const Offset(0.95, 0.95), end: const Offset(1, 1), curve: Curves.easeOutBack);
   }
 }

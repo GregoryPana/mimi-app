@@ -17,9 +17,13 @@ class AppConfig {
   static const int valentinesMonth = 2;
   static const int valentinesDay = 14;
 
+  // ── Seychelles Tripi ─────────────────────────────────────
+  static final DateTime seychellesFlight = DateTime.utc(2026, 5, 10, 7, 0); // 10 May 3pm GMT+8
+  static final DateTime seychellesTouchdown = DateTime.utc(2026, 5, 11, 3, 55); // 11 May 7:55am GMT+4
+
   // ── Security ─────────────────────────────────────────────
-  static const String passcode = '222022';
-  static const String passcodeHint = 'Hint: 02/02/2022 ❤️';
+  static const String passcode = '2222';
+  static const String passcodeHint = 'Hint: You know the one, Baby ❤️';
   static const String passcodeError = 'Not quite 😄 try again, baby.';
 
   // ── Gallery Folders ──────────────────────────────────────
@@ -33,10 +37,12 @@ class AppConfig {
   static const String memoriesSubtitle = 'All our special moments';
   static const String timelineLabel = 'Timeline';
   static const String timelineSubtitle = 'Our journey together';
-  static const String lettersLabel = 'Letters';
-  static const String lettersSubtitle = 'Open your heart';
+  static const String lettersLabel = 'Valentines Letters';
+  static const String lettersSubtitle = 'Our special countdown';
   static const String comicsLabel = 'Comics';
   static const String comicsSubtitle = 'Stories made just for us';
+  static const String seychellesLabel = 'Seychelles Trip';
+  static const String seychellesSubtitle = 'The big adventure!';
 
   // ── External Links ───────────────────────────────────────
   static const String driveVideosUrl =

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -8,11 +9,11 @@ import 'package:pdfx/pdfx.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../app/providers.dart';
-import '../../data/progress_repository.dart';
 import '../../domain/entities.dart';
 import '../theme.dart';
 import '../widgets/animated_gradient_background.dart';
 import '../widgets/pastel_card.dart';
+import '../widgets/skeleton_loader.dart';
 
 class ComicsScreen extends ConsumerStatefulWidget {
   const ComicsScreen({super.key});
@@ -28,6 +29,11 @@ class _ComicsScreenState extends ConsumerState<ComicsScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.86);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(progressControllerProvider.notifier).updateLastViewedSection('comic');
+      }
+    });
   }
 
   @override
@@ -100,14 +106,13 @@ class _ComicsScreenState extends ConsumerState<ComicsScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 10),
                                   child: _ComicCard(
                                     comic: comic,
-                                    onTap: () async {
-                                      // Save last viewed comic
-                                      final repo = ref.read(progressRepositoryProvider);
-                                      await repo.setLastViewedComic(comic.id, 0);
-                                      if (!context.mounted) return;
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      final progressState = ref.read(progressControllerProvider).value;
+                                      final initialPage = progressState?.lastViewedComicId == comic.id ? progressState?.lastViewedComicPage : 0;
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
-                                          builder: (_) => ComicViewerScreen(item: comic),
+                                          builder: (_) => ComicViewerScreen(item: comic, initialPage: initialPage),
                                         ),
                                       );
                                     },
@@ -141,7 +146,26 @@ class _ComicsScreenState extends ConsumerState<ComicsScreen> {
                     ],
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: SkeletonLoader(height: 20, width: 220),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: const SkeletonLoader(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const SkeletonLoader(height: 8, width: 80),
+                    const SizedBox(height: 8),
+                    const SkeletonLoader(height: 16, width: 140),
+                  ],
+                ),
                 error: (error, _) => Text('Error: $error'),
               ),
             ),
@@ -169,12 +193,19 @@ class _ComicCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFB3C7), Color(0xFFDCC6FF)],
+              gradient: LinearGradient(
+                colors: [AppColors.pastelPink, AppColors.pastelLavender],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.pastelPink.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: const Icon(LucideIcons.bookOpen, size: 26),
           ),
@@ -203,24 +234,25 @@ class _ComicCard extends StatelessWidget {
   }
 }
 
-class ComicViewerScreen extends StatefulWidget {
-  const ComicViewerScreen({super.key, required this.item});
+class ComicViewerScreen extends ConsumerStatefulWidget {
+  const ComicViewerScreen({super.key, required this.item, this.initialPage});
 
   final ComicItem item;
+  final int? initialPage;
 
   @override
-  State<ComicViewerScreen> createState() => _ComicViewerScreenState();
+  ConsumerState<ComicViewerScreen> createState() => _ComicViewerScreenState();
 }
 
-class _ComicViewerScreenState extends State<ComicViewerScreen> {
+class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
   late final PdfController _controller;
-  final ProgressRepository _progressRepo = ProgressRepository();
 
   @override
   void initState() {
     super.initState();
     _controller = PdfController(
       document: PdfDocument.openAsset(widget.item.fileAsset),
+      initialPage: widget.initialPage ?? 0,
     );
     // Listen for page changes and save progress
     _controller.pageListenable.addListener(_onPageChanged);
@@ -228,7 +260,7 @@ class _ComicViewerScreenState extends State<ComicViewerScreen> {
 
   void _onPageChanged() {
     final page = _controller.pageListenable.value;
-    _progressRepo.setLastViewedComic(widget.item.id, page);
+    ref.read(progressControllerProvider.notifier).updateLastComicProgress(widget.item.id, page);
   }
 
   @override

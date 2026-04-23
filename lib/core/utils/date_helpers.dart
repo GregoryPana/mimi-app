@@ -11,6 +11,41 @@ class DateHelpers {
     return today.difference(AppConfig.relationshipStart).inDays;
   }
 
+  /// Returns a detailed string of time together: e.g. "4 years 2 months 1 day"
+  /// Only includes non-zero values.
+  static String detailedDurationTogether([DateTime? now]) {
+    final today = now ?? DateTime.now();
+    final start = AppConfig.relationshipStart;
+
+    int years = today.year - start.year;
+    int months = today.month - start.month;
+    int days = today.day - start.day;
+
+    if (days < 0) {
+      months--;
+      // Get the number of days in the previous month
+      final prevMonth = DateTime(today.year, today.month, 0);
+      days += prevMonth.day;
+    }
+
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    int weeks = days ~/ 7;
+    days = days % 7;
+
+    final parts = <String>[];
+    if (years > 0) parts.add('$years year${years == 1 ? '' : 's'}');
+    if (months > 0) parts.add('$months month${months == 1 ? '' : 's'}');
+    if (weeks > 0) parts.add('$weeks week${weeks == 1 ? '' : 's'}');
+    if (days > 0) parts.add('$days day${days == 1 ? '' : 's'}');
+
+    if (parts.isEmpty) return '0 days';
+    return parts.join(' ');
+  }
+
   /// Whether today matches the anniversary date (month + day).
   static bool isAnniversaryToday([DateTime? now]) {
     final today = now ?? DateTime.now();

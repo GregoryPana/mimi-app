@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme.dart';
 
@@ -13,6 +14,8 @@ class QuickActionTile extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isFavorite = false,
+    this.onFavoriteToggle,
   });
 
   final IconData icon;
@@ -21,6 +24,8 @@ class QuickActionTile extends StatefulWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
 
   @override
   State<QuickActionTile> createState() => _QuickActionTileState();
@@ -35,7 +40,10 @@ class _QuickActionTileState extends State<QuickActionTile> {
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
@@ -49,15 +57,33 @@ class _QuickActionTileState extends State<QuickActionTile> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon circle
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: widget.backgroundColor.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(widget.icon, color: widget.iconColor, size: 22),
+              // Icon circle & Favorite heart
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: widget.backgroundColor.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(widget.icon, color: widget.iconColor, size: 22),
+                  ),
+                  if (widget.onFavoriteToggle != null)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        widget.onFavoriteToggle!();
+                      },
+                      icon: Icon(
+                        widget.isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: widget.isFavorite ? AppColors.pastelPink : AppColors.textSecondary.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 10),
               // Title

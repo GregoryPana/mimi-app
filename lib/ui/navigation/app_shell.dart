@@ -4,6 +4,7 @@ import '../screens/home_screen.dart';
 import '../screens/shared_memories_screen.dart';
 import '../screens/surprise_gift_screen.dart';
 import '../theme.dart';
+import '../screens/favorites_screen.dart';
 
 /// Main navigation shell with bottom navigation bar.
 /// Wraps the primary screens (Home, Favorites, Unlocks, Profile).
@@ -20,7 +21,7 @@ class _AppShellState extends State<AppShell> {
 
   static const _screens = [
     HomeScreen(),
-    _PlaceholderScreen(title: 'Favorites', icon: Icons.favorite_outline, subtitle: 'Your favorite memories will appear here'),
+    FavoritesScreen(),
     SurpriseGiftScreen(),
     SharedMemoriesScreen(),
   ];
@@ -61,32 +62,7 @@ class _AppShellState extends State<AppShell> {
                   isActive: _currentIndex == 1,
                   onTap: () => setState(() => _currentIndex = 1),
                 ),
-                // Center FAB
-                GestureDetector(
-                  onTap: () {
-                    // Future: open "add memory" flow
-                  },
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.pastelPink, Color(0xFFE91E63)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.pastelPink.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 28),
-                  ),
-                ),
+
                 _NavItem(
                   icon: Icons.card_giftcard_rounded,
                   label: 'Unlocks',

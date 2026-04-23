@@ -6,15 +6,15 @@ class AppColors {
   static const Color secondaryBackground = Color(0xFFF6FAFF);
   static const Color cardBackground = Color(0xFFFFFFFF);
 
-  static const Color pastelPink = Color(0xFFF8BBD0);
-  static const Color pastelLavender = Color(0xFFDCC6FF);
-  static const Color pastelPeach = Color(0xFFFFD6C0);
-  static const Color pastelBlue = Color(0xFFBFE6FF);
-  static const Color pastelMint = Color(0xFFCFF7E6);
+  static const Color pastelPink = Color(0xFFE56B98);
+  static const Color pastelLavender = Color(0xFF9D7AE0);
+  static const Color pastelPeach = Color(0xFFFA8155);
+  static const Color pastelBlue = Color(0xFF5AB1F9);
+  static const Color pastelMint = Color(0xFF38CC98);
 
-  static const Color textPrimary = Color(0xFF2B2B2B);
-  static const Color textSecondary = Color(0xFF6B6B6B);
-  static const Color textMuted = Color(0xFF9A9A9A);
+  static const Color textPrimary = Color(0xFF1E1E1E);
+  static const Color textSecondary = Color(0xFF555555);
+  static const Color textMuted = Color(0xFF888888);
 
   static const Color border = Color(0xFFF0E6EF);
   static const Color divider = Color(0xFFF3EDF2);
@@ -37,25 +37,39 @@ ThemeData buildAppTheme() {
     textTheme: GoogleFonts.poppinsTextTheme(base.textTheme).copyWith(
       titleLarge: GoogleFonts.poppins(
         fontSize: 28,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
+        height: 1.2,
       ),
       titleMedium: GoogleFonts.poppins(
         fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+      titleSmall: GoogleFonts.poppins(
+        fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
       bodyLarge: GoogleFonts.poppins(
         fontSize: 16,
         color: AppColors.textPrimary,
+        height: 1.5,
       ),
       bodyMedium: GoogleFonts.poppins(
         fontSize: 14,
         color: AppColors.textSecondary,
+        height: 1.5,
       ),
       bodySmall: GoogleFonts.poppins(
         fontSize: 12,
-        color: AppColors.textMuted,
+        color: AppColors.textSecondary.withValues(alpha: 0.8),
+        fontWeight: FontWeight.w500,
+      ),
+      labelSmall: GoogleFonts.poppins(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.1,
       ),
     ),
     cardTheme: const CardThemeData(

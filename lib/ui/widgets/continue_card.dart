@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme.dart';
 
@@ -38,33 +40,58 @@ class _ContinueCardState extends State<ContinueCard> {
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: bg.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                bg.withValues(alpha: 0.8),
+                bg.withValues(alpha: 0.4),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: bg.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Row(
             children: [
               // Thumbnail / icon
               Container(
-                width: 46,
-                height: 46,
+                width: 60,
+                height: 60,
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: bg.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: widget.imageAsset != null
-                    ? Image.asset(widget.imageAsset!, fit: BoxFit.cover, cacheWidth: 150)
+                    ? Image.asset(widget.imageAsset!, fit: BoxFit.cover, cacheWidth: 200)
                     : Icon(
                         widget.icon ?? Icons.play_arrow_rounded,
                         color: AppColors.textPrimary,
-                        size: 24,
+                        size: 28,
                       ),
               ),
               const SizedBox(width: 10),
@@ -76,10 +103,12 @@ class _ContinueCardState extends State<ContinueCard> {
                   children: [
                     Text(
                       widget.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.5,
                           ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       widget.subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -98,18 +127,25 @@ class _ContinueCardState extends State<ContinueCard> {
               ),
               // Chevron
               Container(
-                width: 28,
-                height: 28,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: Colors.white,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.pastelPink.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.chevron_right, size: 16, color: AppColors.textSecondary),
+                child: const Icon(Icons.arrow_forward_rounded, size: 20, color: AppColors.textPrimary),
               ),
             ],
           ),
         ),
       ),
-    );
+    ).animate().scale(delay: 100.ms, begin: const Offset(0.95, 0.95), end: const Offset(1, 1), curve: Curves.easeOutBack);
   }
 }

@@ -21,7 +21,7 @@ class LettersScreen extends ConsumerWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Love Letters'),
+        title: const Text('Valentines Letters'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -99,13 +99,13 @@ class _LettersList extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${letters.length} Love Letters',
+                    '${letters.length} Valentines Letters',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                   ),
                   Text(
-                    'Written from the heart 💕',
+                    'Looking back at our countdown 💕',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -163,14 +163,14 @@ class _LetterCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Day',
+                      'Days',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 10,
+                            fontSize: 9,
                           ),
                     ),
                     Text(
-                      '${letter.dayIndex}',
+                      '${14 - letter.dayIndex}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -185,7 +185,7 @@ class _LetterCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Love Letter #${letter.dayIndex} 💌',
+                      '${14 - letter.dayIndex} Days Before 💌',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -236,6 +236,7 @@ class _LetterReaderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPink = index.isEven;
+    final daysBefore = 14 - letter.dayIndex;
     final gradient = isPink
         ? const [AppColors.pastelPink, AppColors.pastelLavender]
         : const [AppColors.pastelLavender, AppColors.pastelBlue];
@@ -243,7 +244,7 @@ class _LetterReaderScreen extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Day ${letter.dayIndex}'),
+        title: Text('$daysBefore Days Before'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -280,7 +281,7 @@ class _LetterReaderScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '💌 Love Letter #${letter.dayIndex}',
+                      '💌 $daysBefore Days Before',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),

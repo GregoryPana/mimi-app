@@ -44,6 +44,60 @@ class GalleryItem {
   }
 }
 
+class UserGalleryCollection {
+  const UserGalleryCollection({
+    required this.id,
+    required this.name,
+    required this.images,
+  });
+
+  final String id;
+  final String name;
+  final List<UserGalleryImage> images;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'images': images.map((i) => i.toJson()).toList(),
+  };
+
+  factory UserGalleryCollection.fromJson(Map<String, dynamic> json) {
+    return UserGalleryCollection(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      images: (json['images'] as List)
+          .map((i) => UserGalleryImage.fromJson(i as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class UserGalleryImage {
+  const UserGalleryImage({
+    required this.id,
+    required this.filePath,
+    required this.caption,
+  });
+
+  final String id;
+  final String filePath;
+  final String caption;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'filePath': filePath,
+    'caption': caption,
+  };
+
+  factory UserGalleryImage.fromJson(Map<String, dynamic> json) {
+    return UserGalleryImage(
+      id: json['id'] as String,
+      filePath: json['filePath'] as String,
+      caption: json['caption'] as String,
+    );
+  }
+}
+
 class ValentineLetter {
   const ValentineLetter({
     required this.dayIndex,
@@ -108,6 +162,10 @@ class AppProgressState {
     required this.galleryCompleted,
     required this.redeemedVoucherIds,
     this.favoriteIds = const <String>{},
+    this.lastViewedComicId,
+    this.lastViewedComicPage = 0,
+    this.lastViewedGalleryFolder,
+    this.lastViewedSection,
   });
 
   final bool timelineCompleted;
@@ -115,6 +173,10 @@ class AppProgressState {
   final bool galleryCompleted;
   final Set<String> redeemedVoucherIds;
   final Set<String> favoriteIds;
+  final String? lastViewedComicId;
+  final int lastViewedComicPage;
+  final String? lastViewedGalleryFolder;
+  final String? lastViewedSection;
 
   AppProgressState copyWith({
     bool? timelineCompleted,
@@ -122,6 +184,10 @@ class AppProgressState {
     bool? galleryCompleted,
     Set<String>? redeemedVoucherIds,
     Set<String>? favoriteIds,
+    String? lastViewedComicId,
+    int? lastViewedComicPage,
+    String? lastViewedGalleryFolder,
+    String? lastViewedSection,
   }) {
     return AppProgressState(
       timelineCompleted: timelineCompleted ?? this.timelineCompleted,
@@ -129,6 +195,10 @@ class AppProgressState {
       galleryCompleted: galleryCompleted ?? this.galleryCompleted,
       redeemedVoucherIds: redeemedVoucherIds ?? this.redeemedVoucherIds,
       favoriteIds: favoriteIds ?? this.favoriteIds,
+      lastViewedComicId: lastViewedComicId ?? this.lastViewedComicId,
+      lastViewedComicPage: lastViewedComicPage ?? this.lastViewedComicPage,
+      lastViewedGalleryFolder: lastViewedGalleryFolder ?? this.lastViewedGalleryFolder,
+      lastViewedSection: lastViewedSection ?? this.lastViewedSection,
     );
   }
 

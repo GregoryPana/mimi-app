@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/content_repository.dart';
 import 'notification_service.dart';
 import '../data/progress_repository.dart';
+import '../data/user_gallery_repository.dart';
 import '../domain/entities.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final contentRepositoryProvider = Provider<ContentRepository>((ref) {
   return ContentRepository();
@@ -140,6 +142,84 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
         notificationId: NotificationService.valentinesNotificationId + i,
       );
     }
+  }
+
+  Future<void> updateLastComicProgress(String comicId, int page) async {
+    final current = state.value ?? AppProgressState.initial();
+    final next = current.copyWith(
+      lastViewedComicId: comicId,
+      lastViewedComicPage: page,
+      lastViewedSection: 'comic',
+    );
+    state = AsyncData(next);
+    await ref.read(progressRepositoryProvider).save(next);
+  }
+
+  Future<void> updateLastGalleryFolder(String folder) async {
+    final current = state.value ?? AppProgressState.initial();
+    final next = current.copyWith(
+      lastViewedGalleryFolder: folder,
+      lastViewedSection: 'gallery',
+    );
+    state = AsyncData(next);
+    await ref.read(progressRepositoryProvider).save(next);
+  }
+
+  Future<void> updateLastViewedSection(String section) async {
+    final current = state.value ?? AppProgressState.initial();
+    if (current.lastViewedSection == section) return;
+    
+    final next = current.copyWith(lastViewedSection: section);
+    state = AsyncData(next);
+    await ref.read(progressRepositoryProvider).save(next);
+  }
+}
+
+final userGalleryControllerProvider = AsyncNotifierProvider<UserGalleryController, List<UserGalleryCollection>>(
+  UserGalleryController.new,
+);
+
+class UserGalleryController extends AsyncNotifier<List<UserGalleryCollection>> {
+  @override
+  Future<List<UserGalleryCollection>> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final repo = UserGalleryRepository(prefs);
+    return repo.loadCollections();
+  }
+
+  Future<void> addCollection(String name) async {
+    final current = state.value ?? [];
+    final collection = UserGalleryCollection(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      images: [],
+    );
+    final next = [...current, collection];
+    state = AsyncData(next);
+    final prefs = await SharedPreferences.getInstance();
+    await UserGalleryRepository(prefs).saveCollections(next);
+  }
+
+  Future<void> addImageToCollection(String collectionId, String filePath, String caption) async {
+    final current = state.value ?? [];
+    final next = current.map((c) {
+      if (c.id == collectionId) {
+        final image = UserGalleryImage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          filePath: filePath,
+          caption: caption,
+        );
+        return UserGalleryCollection(
+          id: c.id,
+          name: c.name,
+          images: [...c.images, image],
+        );
+      }
+      return c;
+    }).toList();
+    state = AsyncData(next);
+    final prefs = await SharedPreferences.getInstance();
+    await UserGalleryRepository(prefs).saveCollections(next);
   }
 }
 
