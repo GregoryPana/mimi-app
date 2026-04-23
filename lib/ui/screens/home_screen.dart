@@ -15,6 +15,8 @@ import '../widgets/mood_selector.dart';
 import '../widgets/quick_action_tile.dart';
 import '../widgets/section_header.dart';
 import '../widgets/today_card.dart';
+import '../widgets/pinned_shortcut_bar.dart';
+import '../widgets/today_card.dart';
 import 'comics_screen.dart';
 import 'gallery_screen.dart';
 
@@ -98,16 +100,17 @@ class _HomeBody extends ConsumerWidget {
             ),
             child: SafeArea(
               bottom: false,
+              top: false, // Header handles top safe area
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Section A: Welcome Header ──
-                    _buildWelcomeHeader(context, daysTogether),
-                    const SizedBox(height: 20),
+                    // ── Section B: Pinned Shortcuts ──
+                    _buildPinnedShortcuts(context, progress),
+                    const SizedBox(height: 24),
 
-                    // ── Section B: Today in Our Story ──
+                    // ── Section C: Today in Our Story ──
                     if (todayEvent != null) ...[
                       _buildTodayCard(context, todayEvent, now),
                       const SizedBox(height: 22),
@@ -150,59 +153,41 @@ class _HomeBody extends ConsumerWidget {
     );
   }
 
-  // ── Section A ──────────────────────────────────────────────
 
-  Widget _buildWelcomeHeader(BuildContext context, int daysTogether) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome back,',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
-              ),
-              Text(
-                'Baby ❤️',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Day $daysTogether together ❤️ ',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.pastelPink,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    TextSpan(
-                      text: '(${DateHelpers.detailedDurationTogether(DateTime.now())})',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+  // ── Section B ──────────────────────────────────────────────
+
+  Widget _buildPinnedShortcuts(BuildContext context, AppProgressState progress) {
+    final allFeatures = [
+      PinnedFeature(id: 'gallery', label: 'Memories', icon: LucideIcons.image, color: AppColors.pastelLavender),
+      PinnedFeature(id: 'timeline', label: 'Timeline', icon: LucideIcons.calendar, color: AppColors.pastelPeach),
+      PinnedFeature(id: 'letters', label: 'Letters', icon: LucideIcons.mail, color: AppColors.pastelPink),
+      PinnedFeature(id: 'comics', label: 'Comics', icon: LucideIcons.bookOpen, color: AppColors.pastelMint),
+      PinnedFeature(id: 'seychelles', label: 'Trip', icon: LucideIcons.plane, color: AppColors.pastelBlue),
+    ];
+
+    final pinned = allFeatures.where((f) => progress.pinnedFeatureIds.contains(f.id)).toList();
+
+    return PinnedShortcutBar(
+      pinnedItems: pinned,
+      onTap: (feature) => _navigateToFeature(context, feature.id),
     );
   }
 
-  // ── Section B ──────────────────────────────────────────────
+  void _navigateToFeature(BuildContext context, String id) {
+    Widget? screen;
+    switch (id) {
+      case 'gallery': screen = const GalleryScreen(); break;
+      case 'timeline': screen = const TimelineScreen(); break;
+      case 'letters': screen = const LettersScreen(); break;
+      case 'comics': screen = const ComicsScreen(); break;
+      case 'seychelles': screen = const SeychellesScreen(); break;
+    }
+    if (screen != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
+    }
+  }
+
+  // ── Section C ──────────────────────────────────────────────
 
   Widget _buildTodayCard(BuildContext context, TimelineItem event, DateTime now) {
     final parsed = DateHelpers.parseTimelineDate(event.date);
@@ -290,8 +275,8 @@ class _HomeBody extends ConsumerWidget {
   // ── Section E ──────────────────────────────────────────────
 
   Widget _buildQuickActionsGrid(BuildContext context, WidgetRef ref) {
-    bool isFav(String id) => progress.favoriteIds.contains(id);
-    void toggle(String id) => ref.read(progressControllerProvider.notifier).toggleFavorite(id);
+    bool isPinned(String id) => progress.pinnedFeatureIds.contains(id);
+    void toggle(String id) => ref.read(progressControllerProvider.notifier).togglePinnedFeature(id);
 
     return Column(
       children: [
@@ -304,8 +289,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelLavender,
                 title: AppConfig.memoriesLabel,
                 subtitle: AppConfig.memoriesSubtitle,
-                isFavorite: isFav('gallery_action'),
-                onFavoriteToggle: () => toggle('gallery_action'),
+                isPinned: isPinned('gallery'),
+                onPinToggle: () => toggle('gallery'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const GalleryScreen()),
@@ -321,8 +306,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelPeach,
                 title: AppConfig.timelineLabel,
                 subtitle: AppConfig.timelineSubtitle,
-                isFavorite: isFav('timeline_action'),
-                onFavoriteToggle: () => toggle('timeline_action'),
+                isPinned: isPinned('timeline'),
+                onPinToggle: () => toggle('timeline'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const TimelineScreen()),
@@ -342,8 +327,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelPink,
                 title: AppConfig.lettersLabel,
                 subtitle: AppConfig.lettersSubtitle,
-                isFavorite: isFav('letters_action'),
-                onFavoriteToggle: () => toggle('letters_action'),
+                isPinned: isPinned('letters'),
+                onPinToggle: () => toggle('letters'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const LettersScreen()),
@@ -359,8 +344,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelMint,
                 title: AppConfig.comicsLabel,
                 subtitle: AppConfig.comicsSubtitle,
-                isFavorite: isFav('comics_action'),
-                onFavoriteToggle: () => toggle('comics_action'),
+                isPinned: isPinned('comics'),
+                onPinToggle: () => toggle('comics'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const ComicsScreen()),
@@ -380,8 +365,8 @@ class _HomeBody extends ConsumerWidget {
                 backgroundColor: AppColors.pastelBlue,
                 title: AppConfig.seychellesLabel,
                 subtitle: AppConfig.seychellesSubtitle,
-                isFavorite: isFav('seychelles_action'),
-                onFavoriteToggle: () => toggle('seychelles_action'),
+                isPinned: isPinned('seychelles'),
+                onPinToggle: () => toggle('seychelles'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SeychellesScreen()),

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../screens/home_screen.dart';
-import '../screens/shared_memories_screen.dart';
+import '../screens/shared_hub_screen.dart';
 import '../screens/surprise_gift_screen.dart';
 import '../theme.dart';
 import '../screens/favorites_screen.dart';
+import '../widgets/persistent_header.dart';
 
 /// Main navigation shell with bottom navigation bar.
 /// Wraps the primary screens (Home, Favorites, Unlocks, Profile).
@@ -23,15 +24,22 @@ class _AppShellState extends State<AppShell> {
     HomeScreen(),
     FavoritesScreen(),
     SurpriseGiftScreen(),
-    SharedMemoriesScreen(),
+    SharedHubScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: Column(
+        children: [
+          const PersistentHeader(),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _screens,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

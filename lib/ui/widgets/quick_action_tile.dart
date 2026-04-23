@@ -14,8 +14,8 @@ class QuickActionTile extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.isFavorite = false,
-    this.onFavoriteToggle,
+    this.isPinned = false,
+    this.onPinToggle,
   });
 
   final IconData icon;
@@ -24,8 +24,8 @@ class QuickActionTile extends StatefulWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final bool isFavorite;
-  final VoidCallback? onFavoriteToggle;
+  final bool isPinned;
+  final VoidCallback? onPinToggle;
 
   @override
   State<QuickActionTile> createState() => _QuickActionTileState();
@@ -70,16 +70,16 @@ class _QuickActionTileState extends State<QuickActionTile> {
                     ),
                     child: Icon(widget.icon, color: widget.iconColor, size: 22),
                   ),
-                  if (widget.onFavoriteToggle != null)
+                  if (widget.onPinToggle != null)
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         HapticFeedback.mediumImpact();
-                        widget.onFavoriteToggle!();
+                        widget.onPinToggle!();
                       },
                       icon: Icon(
-                        widget.isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: widget.isFavorite ? AppColors.pastelPink : AppColors.textSecondary.withValues(alpha: 0.5),
+                        widget.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                        color: widget.isPinned ? AppColors.pastelPink : AppColors.textSecondary.withValues(alpha: 0.5),
                         size: 20,
                       ),
                     ),

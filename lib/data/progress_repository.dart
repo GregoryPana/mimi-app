@@ -13,6 +13,7 @@ class ProgressRepository {
   static const _keyLastViewedGalleryFolder = 'lastViewedGalleryFolder';
   static const _keyLastViewedSection = 'lastViewedSection';
   static const _keyFavoriteIds = 'favoriteIds';
+  static const _keyPinnedFeatureIds = 'pinnedFeatureIds';
 
   Future<AppProgressState> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -24,6 +25,7 @@ class ProgressRepository {
     final lastComicPage = prefs.getInt(_keyLastComicPage) ?? 0;
     final lastViewedGalleryFolder = prefs.getString(_keyLastViewedGalleryFolder);
     final lastViewedSection = prefs.getString(_keyLastViewedSection);
+    final pinnedFeatureIds = prefs.getStringList(_keyPinnedFeatureIds) ?? <String>[];
 
     return AppProgressState(
       timelineCompleted: timelineCompleted,
@@ -35,6 +37,7 @@ class ProgressRepository {
       lastViewedComicPage: lastComicPage,
       lastViewedGalleryFolder: lastViewedGalleryFolder,
       lastViewedSection: lastViewedSection,
+      pinnedFeatureIds: pinnedFeatureIds.toSet(),
     );
   }
 
@@ -44,6 +47,7 @@ class ProgressRepository {
     await prefs.setStringList(_keyGalleryViewedIds, state.galleryViewedIds.toList());
     await prefs.setStringList(_keyRedeemedVoucherIds, state.redeemedVoucherIds.toList());
     await prefs.setStringList(_keyFavoriteIds, state.favoriteIds.toList());
+    await prefs.setStringList(_keyPinnedFeatureIds, state.pinnedFeatureIds.toList());
     if (state.lastViewedComicId != null) {
       await prefs.setString(_keyLastViewedComicId, state.lastViewedComicId!);
     }

@@ -166,6 +166,7 @@ class AppProgressState {
     this.lastViewedComicPage = 0,
     this.lastViewedGalleryFolder,
     this.lastViewedSection,
+    this.pinnedFeatureIds = const <String>{},
   });
 
   final bool timelineCompleted;
@@ -177,6 +178,7 @@ class AppProgressState {
   final int lastViewedComicPage;
   final String? lastViewedGalleryFolder;
   final String? lastViewedSection;
+  final Set<String> pinnedFeatureIds;
 
   AppProgressState copyWith({
     bool? timelineCompleted,
@@ -188,6 +190,7 @@ class AppProgressState {
     int? lastViewedComicPage,
     String? lastViewedGalleryFolder,
     String? lastViewedSection,
+    Set<String>? pinnedFeatureIds,
   }) {
     return AppProgressState(
       timelineCompleted: timelineCompleted ?? this.timelineCompleted,
@@ -199,6 +202,7 @@ class AppProgressState {
       lastViewedComicPage: lastViewedComicPage ?? this.lastViewedComicPage,
       lastViewedGalleryFolder: lastViewedGalleryFolder ?? this.lastViewedGalleryFolder,
       lastViewedSection: lastViewedSection ?? this.lastViewedSection,
+      pinnedFeatureIds: pinnedFeatureIds ?? this.pinnedFeatureIds,
     );
   }
 
@@ -209,6 +213,7 @@ class AppProgressState {
       galleryCompleted: false,
       redeemedVoucherIds: <String>{},
       favoriteIds: <String>{},
+      pinnedFeatureIds: <String>{},
     );
   }
 }

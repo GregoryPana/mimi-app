@@ -173,6 +173,19 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
     state = AsyncData(next);
     await ref.read(progressRepositoryProvider).save(next);
   }
+
+  Future<void> togglePinnedFeature(String id) async {
+    final current = state.value ?? AppProgressState.initial();
+    final updated = {...current.pinnedFeatureIds};
+    if (updated.contains(id)) {
+      updated.remove(id);
+    } else {
+      updated.add(id);
+    }
+    final next = current.copyWith(pinnedFeatureIds: updated);
+    state = AsyncData(next);
+    await ref.read(progressRepositoryProvider).save(next);
+  }
 }
 
 final userGalleryControllerProvider = AsyncNotifierProvider<UserGalleryController, List<UserGalleryCollection>>(
