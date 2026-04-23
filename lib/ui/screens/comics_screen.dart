@@ -8,6 +8,7 @@ import 'package:pdfx/pdfx.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../app/providers.dart';
+import '../../data/progress_repository.dart';
 import '../../domain/entities.dart';
 import '../theme.dart';
 import '../widgets/animated_gradient_background.dart';
@@ -95,18 +96,22 @@ class _ComicsScreenState extends ConsumerState<ComicsScreen> {
                                   child: child,
                                 );
                               },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                child: _ComicCard(
-                                  comic: comic,
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => ComicViewerScreen(item: comic),
-                                      ),
-                                    );
-                                  },
-                                )
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  child: _ComicCard(
+                                    comic: comic,
+                                    onTap: () async {
+                                      // Save last viewed comic
+                                      final repo = ref.read(progressRepositoryProvider);
+                                      await repo.setLastViewedComic(comic.id, 0);
+                                      if (!context.mounted) return;
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ComicViewerScreen(item: comic),
+                                        ),
+                                      );
+                                    },
+                                  )
                                     .animate()
                                     .fadeIn(duration: 500.ms)
                                     .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
@@ -209,6 +214,7 @@ class ComicViewerScreen extends StatefulWidget {
 
 class _ComicViewerScreenState extends State<ComicViewerScreen> {
   late final PdfController _controller;
+  final ProgressRepository _progressRepo = ProgressRepository();
 
   @override
   void initState() {
@@ -216,10 +222,18 @@ class _ComicViewerScreenState extends State<ComicViewerScreen> {
     _controller = PdfController(
       document: PdfDocument.openAsset(widget.item.fileAsset),
     );
+    // Listen for page changes and save progress
+    _controller.pageListenable.addListener(_onPageChanged);
+  }
+
+  void _onPageChanged() {
+    final page = _controller.pageListenable.value;
+    _progressRepo.setLastViewedComic(widget.item.id, page);
   }
 
   @override
   void dispose() {
+    _controller.pageListenable.removeListener(_onPageChanged);
     _controller.dispose();
     super.dispose();
   }

@@ -17,7 +17,7 @@ class SurpriseGiftScreen extends ConsumerWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Surprise Gift'),
+        title: const Text('Special Moments'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,

@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../core/constants/app_config.dart';
 import '../../domain/entities.dart';
 import '../theme.dart';
 import '../widgets/animated_gradient_background.dart';
@@ -59,7 +60,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Memory Gallery'),
+        title: const Text('Memories'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -136,6 +137,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                                             child: Image.asset(
                                               item.imageAsset,
                                               fit: BoxFit.cover,
+                                              cacheWidth: 400,
                                             ),
                                           ),
                                         ),
@@ -203,25 +205,24 @@ class _FolderSwitcher extends StatelessWidget {
     return PastelCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
-        children: [
-          Expanded(
-            child: ChoiceChip(
-              label: const Text('Seychelles'),
-              selected: selected == 'seychelles',
-              onSelected: (_) => onChanged('seychelles'),
-              selectedColor: AppColors.pastelPeach,
+        children: AppConfig.galleryFolders.entries.map((entry) {
+          final isSelected = selected == entry.key;
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ChoiceChip(
+                label: Text(entry.value),
+                selected: isSelected,
+                onSelected: (_) => onChanged(entry.key),
+                selectedColor: AppColors.pastelPeach,
+                backgroundColor: Colors.white.withValues(alpha: 0.6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: ChoiceChip(
-              label: const Text('Malaysia'),
-              selected: selected == 'malaysia',
-              onSelected: (_) => onChanged('malaysia'),
-              selectedColor: AppColors.pastelPeach,
-            ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -280,7 +281,7 @@ class GalleryViewerScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                       child: Hero(
                         tag: item.id,
-                        child: Image.asset(item.imageAsset, fit: BoxFit.cover),
+                        child: Image.asset(item.imageAsset, fit: BoxFit.cover, cacheWidth: 800),
                       ),
                     ),
                   ),

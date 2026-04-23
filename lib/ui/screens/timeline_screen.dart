@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 
 import '../../app/providers.dart';
+import '../../core/utils/date_helpers.dart';
+import '../../domain/entities.dart';
 import '../widgets/animated_gradient_background.dart';
 import '../widgets/pastel_card.dart';
 import '../widgets/primary_button.dart';
@@ -59,7 +61,7 @@ class TimelineScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       if (!progress.timelineCompleted)
                         Text(
-                          'Keep going, Baby — I’m right here.',
+                          'Keep going, Baby — I\u2019m right here.',
                           style: Theme.of(context).textTheme.bodySmall,
                           textAlign: TextAlign.center,
                         ),
@@ -86,74 +88,118 @@ class _TimelineList extends StatelessWidget {
     required this.onFinish,
   });
 
-  final List<dynamic> items;
+  final List<TimelineItem> items;
   final bool timelineCompleted;
   final VoidCallback? onFinish;
 
+  /// Group items by year, returning a flat list of widgets with
+  /// year headers inserted before each new year group.
+  List<_TimelineEntry> _buildEntries() {
+    final entries = <_TimelineEntry>[];
+    String? lastYear;
+
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      final parsed = DateHelpers.parseTimelineDate(item.date);
+      final year = parsed?.year.toString() ?? '';
+
+      // Insert year divider when year changes
+      if (year.isNotEmpty && year != lastYear) {
+        entries.add(_TimelineEntry(yearHeader: year));
+        lastYear = year;
+      }
+
+      entries.add(_TimelineEntry(item: item, index: i));
+    }
+
+    // Add the finish card
+    entries.add(_TimelineEntry(isFinish: true));
+    return entries;
+  }
+
   String _formatDate(String? raw) {
     if (raw == null || raw.isEmpty) return '';
-    final parts = raw.split('-');
-    if (parts.length < 2) return raw;
-    final year = parts[0];
-    final monthPart = parts[1];
-    String monthToName(String value) {
-      switch (value) {
-        case '01':
-          return 'Jan';
-        case '02':
-          return 'Feb';
-        case '03':
-          return 'Mar';
-        case '04':
-          return 'Apr';
-        case '05':
-          return 'May';
-        case '06':
-          return 'Jun';
-        case '07':
-          return 'Jul';
-        case '08':
-          return 'Aug';
-        case '09':
-          return 'Sep';
-        case '10':
-          return 'Oct';
-        case '11':
-          return 'Nov';
-        case '12':
-          return 'Dec';
-        default:
-          return value;
+
+    // Try to parse as a full date first
+    final parsed = DateHelpers.parseTimelineDate(raw);
+    if (parsed != null) {
+      // Check if the raw string has a day component
+      final hasDay = RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(raw);
+      if (hasDay) {
+        return '${parsed.day} ${_monthName(parsed.month)}\n${parsed.year}';
       }
+      // Month only
+      return '${_monthName(parsed.month)}\n${parsed.year}';
     }
 
-    if (parts.length == 2) {
-      final monthText = monthPart.contains('/')
-          ? monthPart.split('/').map(monthToName).join('/')
-          : monthToName(monthPart);
-      return '$monthText\n$year';
-    }
-
-    if (parts.length >= 3) {
-      final day = parts[2];
-      final monthText = monthToName(monthPart);
-      return '$day $monthText\n$year';
+    // Handle "YYYY-MM/MM" range format
+    final rangeMatch = RegExp(r'^(\d{4})-(\d{1,2})/(\d{1,2})$').firstMatch(raw);
+    if (rangeMatch != null) {
+      final y = rangeMatch.group(1)!;
+      final m1 = int.parse(rangeMatch.group(2)!);
+      final m2 = int.parse(rangeMatch.group(3)!);
+      return '${_monthName(m1)}/${_monthName(m2)}\n$y';
     }
 
     return raw;
   }
 
+  String _monthName(int month) {
+    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    if (month >= 1 && month <= 12) return months[month];
+    return '$month';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final total = items.length + 1;
+    final entries = _buildEntries();
+    final total = entries.length;
+
     return Column(
       children: List.generate(total, (index) {
-        final isLast = index == total - 1;
+        final entry = entries[index];
         final isFirst = index == 0;
-        final duration = Duration(milliseconds: 300 + (index * 60));
+        final isLast = index == total - 1;
+        final duration = Duration(milliseconds: 300 + (index * 50));
 
+        // ── Year Header ──
+        if (entry.yearHeader != null) {
+          return Padding(
+            padding: EdgeInsets.only(top: index == 0 ? 0 : 20, bottom: 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.pastelPink, AppColors.pastelLavender],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    entry.yearHeader!,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: AppColors.pastelLavender.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ── Finish Card ──
         Widget content;
-        if (isLast) {
+        if (entry.isFinish) {
           content = PastelCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,15 +221,32 @@ class _TimelineList extends StatelessWidget {
             ),
           );
         } else {
-          final item = items[index];
+          // ── Timeline Event Card ──
+          final item = entry.item!;
           content = PastelCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Optional image
+                if (item.imageAsset != null && item.imageAsset!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.asset(
+                        item.imageAsset!,
+                        height: 140,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        cacheWidth: 600,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
                 Text(item.title, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 6),
                 if (item.date != null)
-                  Text(item.date, style: Theme.of(context).textTheme.bodySmall),
+                  Text(item.date!, style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 10),
                 Text(item.text, style: Theme.of(context).textTheme.bodyMedium),
               ],
@@ -206,7 +269,7 @@ class _TimelineList extends StatelessWidget {
           child: TimelineTile(
             alignment: TimelineAlign.manual,
             lineXY: 0.24,
-            isFirst: isFirst,
+            isFirst: isFirst && entry.yearHeader == null,
             isLast: isLast,
             beforeLineStyle: const LineStyle(
               color: AppColors.pastelLavender,
@@ -216,15 +279,17 @@ class _TimelineList extends StatelessWidget {
               color: AppColors.pastelPink,
               thickness: 2,
             ),
-            indicatorStyle: IndicatorStyle(
-              width: 18,
-              height: 18,
-              color: isLast ? AppColors.pastelPink : AppColors.pastelLavender,
-              iconStyle: isLast
-                  ? IconStyle(iconData: Icons.favorite, color: AppColors.textPrimary)
-                  : null,
-            ),
-            startChild: isLast
+            indicatorStyle: entry.yearHeader != null
+                ? const IndicatorStyle(width: 0, height: 0)
+                : IndicatorStyle(
+                    width: 18,
+                    height: 18,
+                    color: entry.isFinish ? AppColors.pastelPink : AppColors.pastelLavender,
+                    iconStyle: entry.isFinish
+                        ? IconStyle(iconData: Icons.favorite, color: AppColors.textPrimary)
+                        : null,
+                  ),
+            startChild: entry.yearHeader != null || entry.isFinish
                 ? const SizedBox.shrink()
                 : Padding(
                     padding: const EdgeInsets.only(top: 6, right: 16),
@@ -237,7 +302,7 @@ class _TimelineList extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _formatDate(items[index].date),
+                          _formatDate(entry.item?.date),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textPrimary,
                               ),
@@ -246,16 +311,34 @@ class _TimelineList extends StatelessWidget {
                       ),
                     ),
                   ),
-            endChild: Padding(
-              padding: const EdgeInsets.only(left: 12, right: 24, bottom: 20),
-              child: FractionallySizedBox(
-                widthFactor: 0.92,
-                child: content,
-              ),
-            ),
+            endChild: entry.yearHeader != null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(left: 12, right: 24, bottom: 20),
+                    child: FractionallySizedBox(
+                      widthFactor: 0.92,
+                      child: content,
+                    ),
+                  ),
           ),
         );
       }),
     );
   }
+}
+
+/// Internal entry representing either a year header,
+/// a timeline event, or the finish card.
+class _TimelineEntry {
+  _TimelineEntry({
+    this.yearHeader,
+    this.item,
+    this.index,
+    this.isFinish = false,
+  });
+
+  final String? yearHeader;
+  final TimelineItem? item;
+  final int? index;
+  final bool isFinish;
 }

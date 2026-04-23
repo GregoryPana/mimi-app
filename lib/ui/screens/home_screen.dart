@@ -18,7 +18,7 @@ import 'comics_screen.dart';
 import 'gallery_screen.dart';
 
 import 'timeline_screen.dart';
-import 'valentines_screen.dart';
+import 'letters_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -337,9 +337,8 @@ class _HomeBody extends ConsumerWidget {
                 title: AppConfig.lettersLabel,
                 subtitle: AppConfig.lettersSubtitle,
                 onTap: () {
-                  // For now, navigate to Valentine's screen (letters)
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ValentinesScreen()),
+                    MaterialPageRoute(builder: (_) => const LettersScreen()),
                   );
                 },
               ),

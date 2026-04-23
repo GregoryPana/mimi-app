@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../screens/home_screen.dart';
+import '../screens/shared_memories_screen.dart';
+import '../screens/surprise_gift_screen.dart';
 import '../theme.dart';
 
 /// Main navigation shell with bottom navigation bar.
@@ -19,8 +21,8 @@ class _AppShellState extends State<AppShell> {
   static const _screens = [
     HomeScreen(),
     _PlaceholderScreen(title: 'Favorites', icon: Icons.favorite_outline, subtitle: 'Your favorite memories will appear here'),
-    _PlaceholderScreen(title: 'Unlocks', icon: Icons.card_giftcard_outlined, subtitle: 'Special moments and surprises'),
-    _PlaceholderScreen(title: 'Profile', icon: Icons.person_outline, subtitle: 'Settings and preferences'),
+    SurpriseGiftScreen(),
+    SharedMemoriesScreen(),
   ];
 
   @override
@@ -92,8 +94,8 @@ class _AppShellState extends State<AppShell> {
                   onTap: () => setState(() => _currentIndex = 2),
                 ),
                 _NavItem(
-                  icon: Icons.person_rounded,
-                  label: 'Profile',
+                  icon: Icons.cloud_outlined,
+                  label: 'Cloud',
                   isActive: _currentIndex == 3,
                   onTap: () => setState(() => _currentIndex = 3),
                 ),
