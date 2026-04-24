@@ -23,6 +23,24 @@ final progressControllerProvider = AsyncNotifierProvider<AppProgressController, 
   AppProgressController.new,
 );
 
+final authorProvider = AsyncNotifierProvider<AuthorController, String>(
+  AuthorController.new,
+);
+
+class AuthorController extends AsyncNotifier<String> {
+  @override
+  Future<String> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('shared_author') ?? 'Mimi Boy';
+  }
+
+  Future<void> setAuthor(String author) async {
+    state = AsyncData(author);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('shared_author', author);
+  }
+}
+
 class AppProgressController extends AsyncNotifier<AppProgressState> {
   @override
   Future<AppProgressState> build() async {

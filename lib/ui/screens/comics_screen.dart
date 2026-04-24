@@ -15,6 +15,21 @@ import '../widgets/animated_gradient_background.dart';
 import '../widgets/pastel_card.dart';
 import '../widgets/skeleton_loader.dart';
 
+// Cover gradient presets per comic index — gives each comic its own identity
+const _kCoverGradients = [
+  [Color(0xFFE56B98), Color(0xFF9D7AE0)], // pink → lavender
+  [Color(0xFF5AB1F9), Color(0xFF38CC98)], // blue → mint
+  [Color(0xFFFA8155), Color(0xFFE56B98)], // peach → pink
+  [Color(0xFF9D7AE0), Color(0xFF5AB1F9)], // lavender → blue
+];
+
+const _kCoverIcons = [
+  LucideIcons.heart,
+  LucideIcons.clock,
+  LucideIcons.map,
+  LucideIcons.coffee,
+];
+
 class ComicsScreen extends ConsumerStatefulWidget {
   const ComicsScreen({super.key});
 
@@ -24,11 +39,15 @@ class ComicsScreen extends ConsumerStatefulWidget {
 
 class _ComicsScreenState extends ConsumerState<ComicsScreen> {
   late final PageController _pageController;
+  double _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.86);
+    _pageController = PageController(viewportFraction: 0.78);
+    _pageController.addListener(() {
+      setState(() => _currentPage = _pageController.page ?? 0);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(progressControllerProvider.notifier).updateLastViewedSection('comic');
@@ -56,176 +75,340 @@ class _ComicsScreenState extends ConsumerState<ComicsScreen> {
         surfaceTintColor: Colors.transparent,
       ),
       body: AnimatedGradientBackground(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                0,
-                MediaQuery.of(context).padding.top + kToolbarHeight + 12,
-                0,
-                24,
-              ),
-              child: contentAsync.when(
-                data: (content) {
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          'Swipe through our comics, Baby.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: content.comics.length,
-                          itemBuilder: (context, index) {
-                            final comic = content.comics[index];
-                            return AnimatedBuilder(
-                              animation: _pageController,
-                              builder: (context, child) {
-                                double value = 1;
-                                if (_pageController.hasClients) {
-                                  final page = _pageController.page ?? _pageController.initialPage.toDouble();
-                                  value = (1 - (page - index).abs() * 0.12).clamp(0.86, 1.0);
-                                }
-                                return Transform.scale(
-                                  scale: value,
-                                  child: child,
-                                );
-                              },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                                  child: _ComicCard(
-                                    comic: comic,
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      final progressState = ref.read(progressControllerProvider).value;
-                                      final initialPage = progressState?.lastViewedComicId == comic.id ? progressState?.lastViewedComicPage : 0;
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => ComicViewerScreen(item: comic, initialPage: initialPage),
-                                        ),
-                                      );
-                                    },
-                                  )
-                                    .animate()
-                                    .fadeIn(duration: 500.ms)
-                                    .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SmoothPageIndicator(
-                        controller: _pageController,
-                        count: content.comics.length,
-                        effect: ExpandingDotsEffect(
-                          dotHeight: 8,
-                          dotWidth: 8,
-                          expansionFactor: 3,
-                          spacing: 6,
-                          dotColor: Colors.white.withValues(alpha: 0.4),
-                          activeDotColor: AppColors.pastelPink,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Swipe left or right to explore.',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  );
-                },
-                loading: () => Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: SkeletonLoader(height: 20, width: 220),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: const SkeletonLoader(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const SkeletonLoader(height: 8, width: 80),
-                    const SizedBox(height: 8),
-                    const SkeletonLoader(height: 16, width: 140),
-                  ],
-                ),
-                error: (error, _) => Text('Error: $error'),
-              ),
-            ),
-          ],
+        child: contentAsync.when(
+          data: (content) => _ComicsList(
+            comics: content.comics,
+            pageController: _pageController,
+            currentPage: _currentPage,
+          ),
+          loading: () => _LoadingState(),
+          error: (error, _) => Center(child: Text('Error: $error')),
         ),
       ),
     );
   }
 }
 
+class _ComicsList extends ConsumerWidget {
+  const _ComicsList({
+    required this.comics,
+    required this.pageController,
+    required this.currentPage,
+  });
+
+  final List<ComicItem> comics;
+  final PageController pageController;
+  final double currentPage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(progressControllerProvider).valueOrNull;
+    final lastComicId = progress?.lastViewedComicId;
+
+    final topPad = MediaQuery.of(context).padding.top + kToolbarHeight;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: topPad + 16),
+
+        // Header blurb
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Our Comics',
+                style: Theme.of(context).textTheme.titleLarge,
+              ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.04),
+              const SizedBox(height: 4),
+              Text(
+                '${comics.length} stories just for us.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ).animate(delay: 80.ms).fadeIn(duration: 400.ms).slideX(begin: -0.04),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 28),
+
+        // Comic carousel
+        SizedBox(
+          height: 420,
+          child: PageView.builder(
+            controller: pageController,
+            itemCount: comics.length,
+            itemBuilder: (context, index) {
+              final comic = comics[index];
+              final isCurrent = (currentPage - index).abs() < 0.5;
+              final isContinue = comic.id == lastComicId;
+              final lastPage = isContinue ? (progress?.lastViewedComicPage ?? 0) : 0;
+
+              final scale = (1 - (currentPage - index).abs() * 0.08).clamp(0.88, 1.0);
+
+              return Transform.scale(
+                scale: scale,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: _ComicCard(
+                    comic: comic,
+                    index: index,
+                    isCurrent: isCurrent,
+                    isContinue: isContinue,
+                    lastPage: lastPage,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ComicViewerScreen(
+                            item: comic,
+                            initialPage: isContinue ? lastPage : 0,
+                          ),
+                        ),
+                      );
+                    },
+                  ).animate().fadeIn(duration: 500.ms, delay: (index * 80).ms)
+                   .slideY(begin: 0.06, end: 0, curve: Curves.easeOut),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Page indicator
+        Center(
+          child: SmoothPageIndicator(
+            controller: pageController,
+            count: comics.length,
+            effect: ExpandingDotsEffect(
+              dotHeight: 8,
+              dotWidth: 8,
+              expansionFactor: 3,
+              spacing: 6,
+              dotColor: Colors.white.withValues(alpha: 0.3),
+              activeDotColor: AppColors.pastelPink,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Center(
+          child: Text(
+            'Swipe to browse',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ComicCard extends StatelessWidget {
-  const _ComicCard({required this.comic, required this.onTap});
+  const _ComicCard({
+    required this.comic,
+    required this.index,
+    required this.isCurrent,
+    required this.isContinue,
+    required this.lastPage,
+    required this.onTap,
+  });
 
   final ComicItem comic;
+  final int index;
+  final bool isCurrent;
+  final bool isContinue;
+  final int lastPage;
   final VoidCallback onTap;
+
+  List<Color> get _gradient => _kCoverGradients[index % _kCoverGradients.length];
+  IconData get _icon => _kCoverIcons[index % _kCoverIcons.length];
 
   @override
   Widget build(BuildContext context) {
     return PastelCard(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.zero,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.pastelPink, AppColors.pastelLavender],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          // Cover area
+          Expanded(
+            flex: 5,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Gradient background
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _gradient,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                  // Decorative circles
+                  Positioned(
+                    top: -30,
+                    right: -30,
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -20,
+                    left: -20,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                  ),
+                  // Icon + number
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          child: Icon(_icon, size: 34, color: Colors.white),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '#${index + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // "Continue" badge
+                  if (isContinue)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.bookmark, size: 12, color: _gradient[0]),
+                            const SizedBox(width: 4),
+                            Text(
+                              'p.$lastPage',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: _gradient[0],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.pastelPink.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: const Icon(LucideIcons.bookOpen, size: 26),
           ),
-          const SizedBox(height: 16),
-          Text(
-            comic.title,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Tap to read',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const Spacer(),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: onTap,
-              icon: const Icon(LucideIcons.arrowRight),
-              label: const Text('Open'),
+
+          // Info + CTA area
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    comic.title,
+                    style: Theme.of(context).textTheme.titleSmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Text(
+                        isContinue ? 'Continue reading' : 'Start reading',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: _gradient[0],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: onTap,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: _gradient),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _gradient[0].withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isContinue ? LucideIcons.play : LucideIcons.arrowRight,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                isContinue ? 'Continue' : 'Open',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -233,6 +416,30 @@ class _ComicCard extends StatelessWidget {
     );
   }
 }
+
+class _LoadingState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top + kToolbarHeight;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, topPad + 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SkeletonLoader(height: 32, width: 160),
+          const SizedBox(height: 8),
+          const SkeletonLoader(height: 16, width: 220),
+          const SizedBox(height: 32),
+          Expanded(
+            child: Center(child: const SkeletonLoader()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Comic Viewer ──────────────────────────────────────────────────────────────
 
 class ComicViewerScreen extends ConsumerStatefulWidget {
   const ComicViewerScreen({super.key, required this.item, this.initialPage});
@@ -246,6 +453,7 @@ class ComicViewerScreen extends ConsumerStatefulWidget {
 
 class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
   late final PdfController _controller;
+  bool _uiVisible = true;
 
   @override
   void initState() {
@@ -254,7 +462,6 @@ class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
       document: PdfDocument.openAsset(widget.item.fileAsset),
       initialPage: widget.initialPage ?? 0,
     );
-    // Listen for page changes and save progress
     _controller.pageListenable.addListener(_onPageChanged);
   }
 
@@ -270,42 +477,62 @@ class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
     super.dispose();
   }
 
+  void _toggleUi() {
+    setState(() => _uiVisible = !_uiVisible);
+    if (_uiVisible) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF1A1A2E),
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(widget.item.title),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: AnimatedOpacity(
+          opacity: _uiVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          child: AppBar(
+            title: Text(
+              widget.item.title,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            backgroundColor: Colors.black.withValues(alpha: 0.5),
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+        ),
       ),
-      body: AnimatedGradientBackground(
+      body: GestureDetector(
+        onTap: _toggleUi,
         child: Stack(
           children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                0,
-                MediaQuery.of(context).padding.top + kToolbarHeight + 12,
-                0,
-                0,
-              ),
-              child: PdfView(
-                controller: _controller,
-                scrollDirection: Axis.horizontal,
-                pageSnapping: true,
-                builders: PdfViewBuilders<DefaultBuilderOptions>(
-                  options: const DefaultBuilderOptions(),
-                  pageBuilder: (context, pageImage, index, document) {
-                    return PhotoViewGalleryPageOptions.customChild(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: PastelCard(
-                            padding: const EdgeInsets.all(10),
+            // PDF content
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  _uiVisible ? MediaQuery.of(context).padding.top + kToolbarHeight : 0,
+                  0,
+                  _uiVisible ? 72 : 0,
+                ),
+                child: PdfView(
+                  controller: _controller,
+                  scrollDirection: Axis.horizontal,
+                  pageSnapping: true,
+                  builders: PdfViewBuilders<DefaultBuilderOptions>(
+                    options: const DefaultBuilderOptions(),
+                    pageBuilder: (context, pageImage, index, document) {
+                      return PhotoViewGalleryPageOptions.customChild(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(12),
                               child: Image(
                                 image: PdfPageImageProvider(pageImage, index, document.id),
                                 fit: BoxFit.contain,
@@ -314,55 +541,98 @@ class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
                             ),
                           ),
                         ),
-                      ),
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 2.0,
-                    );
-                  },
+                        minScale: PhotoViewComputedScale.contained * 0.9,
+                        maxScale: PhotoViewComputedScale.covered * 2.5,
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-            Positioned(
+
+            // Bottom page indicator bar
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
               left: 0,
               right: 0,
-              bottom: 16,
-              child: ValueListenableBuilder<int>(
-                valueListenable: _controller.pageListenable,
-                builder: (context, page, child) {
-                  final count = _controller.pagesCount ?? 0;
-                  if (count <= 1) return const SizedBox.shrink();
-                  return Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: AnimatedSmoothIndicator(
-                        activeIndex: (page - 1).clamp(0, count - 1),
-                        count: count,
-                        effect: ExpandingDotsEffect(
-                          dotHeight: 6,
-                          dotWidth: 6,
-                          spacing: 6,
-                          expansionFactor: 3,
-                          dotColor: Colors.black.withValues(alpha: 0.15),
-                          activeDotColor: AppColors.pastelPink,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+              bottom: _uiVisible ? 0 : -80,
+              child: _PageBar(controller: _controller),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PageBar extends StatelessWidget {
+  const _PageBar({required this.controller});
+  final PdfController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            12,
+            24,
+            12 + MediaQuery.of(context).padding.bottom,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.4),
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+          ),
+          child: ValueListenableBuilder<int>(
+            valueListenable: controller.pageListenable,
+            builder: (context, page, child) {
+              final count = controller.pagesCount ?? 0;
+              if (count <= 1) return const SizedBox.shrink();
+
+              final progress = count > 0 ? (page - 1) / (count - 1) : 0.0;
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Page $page',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$count pages',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress.clamp(0.0, 1.0),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.pastelPink),
+                      minHeight: 4,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

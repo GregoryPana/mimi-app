@@ -218,6 +218,63 @@ class AppProgressState {
   }
 }
 
+class SharedGalleryImage {
+  const SharedGalleryImage({
+    required this.id,
+    required this.key,
+    required this.imageUrl,
+    required this.caption,
+    required this.uploadedBy,
+  });
+
+  final String id;
+  /// The Sanity array item `_key` — used for unset mutations.
+  final String key;
+  final String imageUrl;
+  final String caption;
+  final String uploadedBy;
+
+  factory SharedGalleryImage.fromJson(Map<String, dynamic> json) {
+    final k = json['_key'] as String? ??
+        json['localId'] as String? ??
+        json['_id'] as String? ??
+        '';
+    return SharedGalleryImage(
+      id: json['localId'] as String? ?? json['_key'] as String? ?? '',
+      key: k,
+      imageUrl: json['imageUrl'] as String? ?? '',
+      caption: json['caption'] as String? ?? '',
+      uploadedBy: json['uploadedBy'] as String? ?? '',
+    );
+  }
+}
+
+class SharedGalleryCollection {
+  const SharedGalleryCollection({
+    required this.id,
+    required this.name,
+    required this.createdBy,
+    required this.images,
+  });
+
+  final String id;
+  final String name;
+  final String createdBy;
+  final List<SharedGalleryImage> images;
+
+  factory SharedGalleryCollection.fromJson(Map<String, dynamic> json) {
+    return SharedGalleryCollection(
+      id: json['_id'] as String,
+      name: json['name'] as String? ?? 'Untitled',
+      createdBy: json['createdBy'] as String? ?? '',
+      images: (json['images'] as List<dynamic>?)
+              ?.map((i) => SharedGalleryImage.fromJson(i as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
 class ContentData {
   const ContentData({
     required this.timeline,

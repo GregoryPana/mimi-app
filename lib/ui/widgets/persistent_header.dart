@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../app/music_player_provider.dart';
-import '../../core/constants/app_config.dart';
 import '../../core/utils/date_helpers.dart';
 import '../theme.dart';
 

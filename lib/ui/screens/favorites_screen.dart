@@ -111,7 +111,7 @@ class FavoritesScreen extends ConsumerWidget {
   Widget _buildFavOur(BuildContext context, WidgetRef ref, GalleryItem item, int index) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => GalleryViewerScreen(ours: item)));
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => GalleryViewerScreen(oursItems: [item], initialIndex: 0)));
       },
       child: Stack(
         children: [
@@ -156,7 +156,7 @@ class FavoritesScreen extends ConsumerWidget {
   Widget _buildFavYours(BuildContext context, WidgetRef ref, UserGalleryImage img, int index) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => GalleryViewerScreen(yours: img)));
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => GalleryViewerScreen(yoursItems: [img], initialIndex: 0)));
       },
       child: Stack(
         children: [

@@ -48,7 +48,7 @@ class _QuickActionTileState extends State<QuickActionTile> {
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: widget.backgroundColor.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(18),
@@ -62,13 +62,13 @@ class _QuickActionTileState extends State<QuickActionTile> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       color: widget.backgroundColor.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(widget.icon, color: widget.iconColor, size: 22),
+                    child: Icon(widget.icon, color: widget.iconColor, size: 20),
                   ),
                   if (widget.onPinToggle != null)
                     IconButton(
@@ -80,12 +80,12 @@ class _QuickActionTileState extends State<QuickActionTile> {
                       icon: Icon(
                         widget.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
                         color: widget.isPinned ? AppColors.pastelPink : AppColors.textSecondary.withValues(alpha: 0.5),
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               // Title
               Row(
                 children: [
@@ -94,22 +94,24 @@ class _QuickActionTileState extends State<QuickActionTile> {
                       widget.title,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.chevron_right, size: 16, color: AppColors.textSecondary),
+                  const Icon(Icons.chevron_right, size: 14, color: AppColors.textSecondary),
                 ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               // Subtitle
               Text(
                 widget.subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
+                      fontSize: 10,
                     ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ],

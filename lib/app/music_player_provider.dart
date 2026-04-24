@@ -88,7 +88,7 @@ class MusicPlayerNotifier extends StateNotifier<MusicPlayerState> {
   }
 
   Future<void> playOurSong() async {
-    await playAsset('assets/audio/our_song.mp3', title: 'Our Song', artist: 'Mimi & Greg');
+    await playAsset('assets/audio/our_song.mp3', title: 'Our Song', artist: 'Mimi Girl & Mimi Boy');
   }
 
   void seek(Duration position) {

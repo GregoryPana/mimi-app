@@ -109,4 +109,26 @@ class NotificationService {
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
+
+  Future<void> showInstantNotification({
+    required String title,
+    required String body,
+    int id = 0,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'shared_hub',
+      'Shared Hub Activity',
+      channelDescription: 'Notifications for new shared notes, photos, and movies',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails();
+
+    await _plugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
+  }
 }

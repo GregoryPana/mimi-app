@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../screens/home_screen.dart';
 import '../screens/shared_hub_screen.dart';
@@ -6,18 +7,20 @@ import '../screens/surprise_gift_screen.dart';
 import '../theme.dart';
 import '../screens/favorites_screen.dart';
 import '../widgets/persistent_header.dart';
+import '../../data/sanity_repository.dart';
+import '../../app/notification_service.dart';
 
 /// Main navigation shell with bottom navigation bar.
 /// Wraps the primary screens (Home, Favorites, Unlocks, Profile).
 /// The (+) center button is a decorative FAB placeholder.
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   int _currentIndex = 0;
 
   static const _screens = [
@@ -29,15 +32,86 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for new shared content to show notifications
+    ref.listen(sharedNotesProvider, (previous, next) {
+      final items = next.valueOrNull;
+      final prevItems = previous?.valueOrNull;
+      if (items != null && prevItems != null && items.length > prevItems.length) {
+        final newNote = items.first;
+        NotificationService.instance.showInstantNotification(
+          id: 101,
+          title: 'New Shared Note 📝',
+          body: '${newNote['author']} just shared: "${newNote['title']}"',
+        );
+      }
+    });
+
+    ref.listen(sharedImagesProvider, (previous, next) {
+      final items = next.valueOrNull;
+      final prevItems = previous?.valueOrNull;
+      if (items != null && prevItems != null && items.length > prevItems.length) {
+        final newImg = items.first;
+        NotificationService.instance.showInstantNotification(
+          id: 102,
+          title: 'New Photo Shared 📸',
+          body: '${newImg['uploadedBy']} uploaded a new memory!',
+        );
+      }
+    });
+
+    ref.listen(watchlistProvider, (previous, next) {
+      final items = next.valueOrNull;
+      final prevItems = previous?.valueOrNull;
+      if (items != null && prevItems != null && items.length > prevItems.length) {
+        final newMovie = items.first;
+        NotificationService.instance.showInstantNotification(
+          id: 103,
+          title: 'Movie Added to Watchlist 🍿',
+          body: 'New movie added: ${newMovie['title']}',
+        );
+      }
+    });
+
+    ref.listen(seychellesPackingProvider, (previous, next) {
+      final items = next.valueOrNull;
+      final prevItems = previous?.valueOrNull;
+      if (items != null && prevItems != null && items.length > prevItems.length) {
+        final newItem = items.last; // Packing is ordered _createdAt asc
+        NotificationService.instance.showInstantNotification(
+          id: 104,
+          title: 'New Packing Item 🧳',
+          body: 'Don\'t forget to pack: ${newItem['item']}',
+        );
+      }
+    });
+
+    ref.listen(seychellesItineraryProvider, (previous, next) {
+      final items = next.valueOrNull;
+      final prevItems = previous?.valueOrNull;
+      if (items != null && prevItems != null && items.length > prevItems.length) {
+        final newItem = items.last; // Itinerary is ordered _createdAt asc
+        NotificationService.instance.showInstantNotification(
+          id: 105,
+          title: 'New Trip Plan! ✈️',
+          body: '${newItem['day']}: ${newItem['title']}',
+        );
+      }
+    });
+
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          const PersistentHeader(),
-          Expanded(
+          Positioned.fill(
             child: IndexedStack(
               index: _currentIndex,
               children: _screens,
             ),
+          ),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: PersistentHeader(),
           ),
         ],
       ),
@@ -146,39 +220,3 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Simple placeholder screen for tabs not yet implemented.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({
-    required this.title,
-    required this.icon,
-    required this.subtitle,
-  });
-
-  final String title;
-  final IconData icon;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.appBackground,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: AppColors.pastelLavender),
-            const SizedBox(height: 12),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

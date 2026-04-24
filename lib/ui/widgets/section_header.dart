@@ -9,10 +9,12 @@ class SectionHeader extends StatelessWidget {
     super.key,
     required this.icon,
     required this.label,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,10 @@ class SectionHeader extends StatelessWidget {
                   letterSpacing: 1.2,
                 ),
           ),
+          if (trailing != null) ...[
+            const Spacer(),
+            trailing!,
+          ],
         ],
       ),
     );
