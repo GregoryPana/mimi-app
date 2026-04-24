@@ -109,7 +109,7 @@ class SanityRepository {
     final ext = imageFile.path.split('.').last.toLowerCase();
     final bytes = await imageFile.readAsBytes();
     final uri = Uri.parse(
-      'https://$_kProjectId.api.sanity.io/v$_kApiVersion/assets/images/$_kDataset',
+      'https://$_kProjectId.api.sanity.io/$_kApiVersion/assets/images/$_kDataset',
     );
     final response = await http.post(
       uri,

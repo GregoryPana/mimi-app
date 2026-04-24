@@ -702,6 +702,7 @@ class GalleryViewerScreen extends ConsumerStatefulWidget {
     this.oursItems,
     this.yoursItems,
     this.sanityItems,
+    this.collectionId,
     this.initialIndex = 0,
   }) : assert(
             oursItems != null || yoursItems != null || sanityItems != null);
@@ -709,6 +710,7 @@ class GalleryViewerScreen extends ConsumerStatefulWidget {
   final List<GalleryItem>? oursItems;
   final List<UserGalleryImage>? yoursItems;
   final List<SharedGalleryImage>? sanityItems;
+  final String? collectionId;
   final int initialIndex;
 
   @override
@@ -801,6 +803,12 @@ class _GalleryViewerScreenState extends ConsumerState<GalleryViewerScreen> {
         backgroundColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          if (widget.sanityItems != null && widget.collectionId != null)
+            IconButton(
+              icon: const Icon(LucideIcons.trash2, color: Colors.white70),
+              onPressed: () => _confirmDeleteShared(context, ref),
+              tooltip: 'Remove from collection',
+            ),
           if (_total > 1)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -886,6 +894,52 @@ class _GalleryViewerScreenState extends ConsumerState<GalleryViewerScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteShared(BuildContext context, WidgetRef ref) async {
+    final img = widget.sanityItems![_currentIndex];
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Remove photo?'),
+        content: Text(
+          img.caption.isEmpty
+              ? 'This memory will be removed from the collection.'
+              : '"${img.caption}" will be removed from the collection.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    try {
+      await ref.read(sanityRepositoryProvider).removeImageFromSharedCollection(
+            collectionId: widget.collectionId!,
+            imageKey: img.key,
+          );
+      if (context.mounted) {
+        Navigator.pop(context); // Close viewer
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Memory removed')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e')),
+        );
+      }
+    }
   }
 }
 
@@ -1333,6 +1387,7 @@ class _SharedCollectionScreenState
                                 _heroRoute(
                                   GalleryViewerScreen(
                                     sanityItems: col.images,
+                                    collectionId: col.id,
                                     initialIndex: index,
                                   ),
                                 ),

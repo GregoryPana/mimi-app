@@ -42,36 +42,47 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Our Shared Hub'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        actions: [
-          _AuthorChip(onTap: () => _showAuthorPicker(context)),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.pastelPink,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelColor: AppColors.pastelPink,
-          unselectedLabelColor: AppColors.textSecondary,
-          tabs: const [
-            Tab(icon: Icon(LucideIcons.image), text: 'Photos'),
-            Tab(icon: Icon(LucideIcons.stickyNote), text: 'Notes'),
-            Tab(icon: Icon(LucideIcons.clapperboard), text: 'Watch'),
-          ],
-        ),
-      ),
       body: AnimatedGradientBackground(
-        child: TabBarView(
-          controller: _tabController,
+        child: Column(
           children: [
-            _ImagesTab(tabController: _tabController),
-            _NotesTab(tabController: _tabController),
-            _WatchlistTab(tabController: _tabController),
+            // Custom Header area for Tabs
+            Container(
+              padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 80, 20, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      indicatorColor: AppColors.pastelPink,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelColor: AppColors.pastelPink,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      dividerColor: Colors.transparent,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                      tabs: const [
+                        Tab(text: 'Photos'),
+                        Tab(text: 'Notes'),
+                        Tab(text: 'Watch'),
+                      ],
+                    ),
+                  ),
+                  _AuthorChip(onTap: () => _showAuthorPicker(context)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _ImagesTab(tabController: _tabController),
+                  _NotesTab(tabController: _tabController),
+                  _WatchlistTab(tabController: _tabController),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -313,7 +324,7 @@ class _ImagesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final imagesAsync = ref.watch(sharedImagesProvider);
-    final topPad = MediaQuery.of(context).padding.top + kToolbarHeight + 52;
+    const topPad = 12.0;
 
     return RefreshIndicator(
       color: AppColors.pastelPink,
@@ -450,7 +461,7 @@ class _NotesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notesAsync = ref.watch(sharedNotesProvider);
-    final topPad = MediaQuery.of(context).padding.top + kToolbarHeight + 52;
+    const topPad = 12.0;
 
     return RefreshIndicator(
       color: AppColors.pastelPink,
@@ -590,7 +601,7 @@ class _WatchlistTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final watchlistAsync = ref.watch(watchlistProvider);
-    final topPad = MediaQuery.of(context).padding.top + kToolbarHeight + 52;
+    const topPad = 12.0;
 
     return RefreshIndicator(
       color: AppColors.pastelPink,
