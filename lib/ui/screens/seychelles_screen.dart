@@ -185,6 +185,7 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
           onPressed: () => _confettiController.play(),
           child: const Icon(LucideIcons.partyPopper, color: Colors.white),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       ),
     );
   }

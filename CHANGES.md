@@ -1,8 +1,10 @@
 # Mimi App Changes
 
-### [2026-04-24] - Shared Memory Hub Stabilization
+### [2026-04-24] - Shared Memory Hub Stabilization & UI Refinement
 
-#### Fixed
+#### Improved
+- **PIN Page Redesign**: Completely overhauled `PasscodeScreen` with a premium glassmorphic aesthetic, animated indicator dots, and a centered minimal layout.
+- **Seychelles UX**: Relocated the confetti party popper FAB to the left side (`startFloat`) to prevent overlap with tab-specific action buttons.
 - **Sanity API**: Resolved 404 error during image asset upload by removing redundant 'v' prefix in versioned URLs.
 - **Author Identity**: Migrated all author labels and attribution logic from "Greg and Mimi" to "Mimi Boy" and "Mimi Girl".
 - **Shared Memory CRUD**: Added the ability to delete shared memories from both the collection list (long press) and the full-screen gallery viewer.
