@@ -1,36 +1,41 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-
 
 class FloatingHeartsBackground extends StatefulWidget {
   const FloatingHeartsBackground({
     super.key,
-    this.count = 16,
-    this.opacity = 0.18,
+    this.count = 14,
+    this.opacity = 0.16,
   });
 
   final int count;
   final double opacity;
 
   @override
-  State<FloatingHeartsBackground> createState() => _FloatingHeartsBackgroundState();
+  State<FloatingHeartsBackground> createState() =>
+      _FloatingHeartsBackgroundState();
 }
 
 class _FloatingHeartsBackgroundState extends State<FloatingHeartsBackground>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final List<_HeartParticle> _particles;
+  late final CurvedAnimation _intro;
+  late final List<_HeartSpec> _hearts;
 
   @override
   void initState() {
     super.initState();
-    final random = Random(42);
-    _particles = List.generate(widget.count, (_) => _HeartParticle.random(random));
+    final random = math.Random(1997);
+    _hearts = List.generate(widget.count, (_) => _HeartSpec.random(random));
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 24),
+      duration: const Duration(seconds: 18),
     )..repeat();
+    _intro = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.25, curve: Curves.easeOutCubic),
+    );
   }
 
   @override
@@ -46,9 +51,10 @@ class _FloatingHeartsBackgroundState extends State<FloatingHeartsBackground>
         animation: _controller,
         builder: (context, child) {
           return CustomPaint(
-            painter: _HeartsPainter(
-              progress: _controller.value,
-              particles: _particles,
+            painter: _CleanHeartsPainter(
+              t: _controller.value,
+              intro: _intro.value,
+              hearts: _hearts,
               opacity: widget.opacity,
             ),
           );
@@ -58,104 +64,122 @@ class _FloatingHeartsBackgroundState extends State<FloatingHeartsBackground>
   }
 }
 
-class _HeartParticle {
-  _HeartParticle({
-    required this.xFactor,
-    required this.yFactor,
+class _HeartSpec {
+  const _HeartSpec({
+    required this.lane,
+    required this.offset,
     required this.speed,
     required this.size,
+    required this.swing,
     required this.phase,
-    required this.colorIndex,
+    required this.tintIndex,
   });
 
-  final double xFactor;
-  final double yFactor;
+  final double lane;
+  final double offset;
   final double speed;
   final double size;
+  final double swing;
   final double phase;
-  final int colorIndex;
+  final int tintIndex;
 
-  factory _HeartParticle.random(Random random) {
-    return _HeartParticle(
-      xFactor: random.nextDouble(),
-      yFactor: random.nextDouble(),
-      speed: 0.15 + random.nextDouble() * 0.35,
-      size: 10 + random.nextDouble() * 14,
-      phase: random.nextDouble() * pi * 2,
-      colorIndex: random.nextInt(5),
+  factory _HeartSpec.random(math.Random random) {
+    return _HeartSpec(
+      lane: 0.08 + random.nextDouble() * 0.84,
+      offset: random.nextDouble(),
+      speed: 0.42 + random.nextDouble() * 0.46,
+      size: 8 + random.nextDouble() * 12,
+      swing: 0.008 + random.nextDouble() * 0.022,
+      phase: random.nextDouble() * math.pi * 2,
+      tintIndex: random.nextInt(_CleanHeartsPainter.tints.length),
     );
   }
 }
 
-class _HeartsPainter extends CustomPainter {
-  _HeartsPainter({
-    required this.progress,
-    required this.particles,
+class _CleanHeartsPainter extends CustomPainter {
+  const _CleanHeartsPainter({
+    required this.t,
+    required this.intro,
+    required this.hearts,
     required this.opacity,
   });
 
-  final double progress;
-  final List<_HeartParticle> particles;
+  final double t;
+  final double intro;
+  final List<_HeartSpec> hearts;
   final double opacity;
 
-  static const List<Color> _colors = [
-    Color(0xFFE57373),
-    Color(0xFFEF5350),
-    Color(0xFFF06292),
-    Color(0xFFD32F2F),
-    Color(0xFFFF8A80),
+  static const List<Color> tints = [
+    Color(0xFFF5A3BC),
+    Color(0xFFF28AAE),
+    Color(0xFFEC7FA7),
+    Color(0xFFF6B7CB),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
 
-    for (final particle in particles) {
-      final baseX = particle.xFactor * size.width;
-      final baseY = particle.yFactor * size.height;
-      final drift = sin(progress * 2 * pi + particle.phase) * 8;
-      final travel = progress * particle.speed * size.height * 1.6;
-      double y = baseY - travel;
-      y = (y % size.height + size.height) % size.height;
+    final heartbeat = 0.97 + (math.sin(t * math.pi * 4) * 0.03);
+    for (final heart in hearts) {
+      final cycle = (t * heart.speed + heart.offset) % 1.0;
+      final y = size.height * (1.08 - cycle * 1.16);
+      final sway =
+          math.sin((cycle * math.pi * 2) + heart.phase) *
+          size.width *
+          heart.swing;
+      final x = size.width * heart.lane + sway;
 
-      final paint = Paint()
-        ..color = _colors[particle.colorIndex].withValues(alpha: opacity)
-        ..style = PaintingStyle.fill;
+      final fade = _softFade(cycle) * intro;
+      if (fade <= 0.01) continue;
 
-      final path = _heartPath(Offset(baseX + drift, y), particle.size);
-      canvas.drawPath(path, paint);
+      final c = tints[heart.tintIndex].withValues(alpha: fade * opacity);
+      final path = _heartPath(Offset(x, y), heart.size * heartbeat);
+
+      canvas.drawPath(path, Paint()..color = c);
     }
   }
 
-  Path _heartPath(Offset center, double size) {
-    final double width = size;
-    final double height = size * 0.95;
-    final double x = center.dx;
-    final double y = center.dy;
+  double _softFade(double cycle) {
+    if (cycle < 0.12) {
+      return cycle / 0.12;
+    }
+    if (cycle > 0.84) {
+      return (1.0 - cycle) / 0.16;
+    }
+    return 1.0;
+  }
 
-    final path = Path();
-    path.moveTo(x, y + height * 0.35);
-    path.cubicTo(
-      x + width * 0.55,
-      y - height * 0.1,
-      x + width * 0.95,
-      y + height * 0.25,
-      x,
-      y + height * 0.9,
-    );
-    path.cubicTo(
-      x - width * 0.95,
-      y + height * 0.25,
-      x - width * 0.55,
-      y - height * 0.1,
-      x,
-      y + height * 0.35,
-    );
-    return path;
+  Path _heartPath(Offset center, double size) {
+    final w = size;
+    final h = size * 0.96;
+    final x = center.dx;
+    final y = center.dy;
+
+    return Path()
+      ..moveTo(x, y + h * 0.34)
+      ..cubicTo(
+        x + w * 0.54,
+        y - h * 0.14,
+        x + w * 0.95,
+        y + h * 0.21,
+        x,
+        y + h * 0.92,
+      )
+      ..cubicTo(
+        x - w * 0.95,
+        y + h * 0.21,
+        x - w * 0.54,
+        y - h * 0.14,
+        x,
+        y + h * 0.34,
+      );
   }
 
   @override
-  bool shouldRepaint(covariant _HeartsPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.opacity != opacity;
+  bool shouldRepaint(covariant _CleanHeartsPainter oldDelegate) {
+    return oldDelegate.t != t ||
+        oldDelegate.intro != intro ||
+        oldDelegate.opacity != opacity;
   }
 }

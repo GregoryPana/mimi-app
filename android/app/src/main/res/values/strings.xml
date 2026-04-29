@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mimi</string>
+    
+    <string name="widget_us_label">Us Together</string>
+    <string name="widget_us_description">Track how long we\'ve been together in days.</string>
+    
+    <string name="widget_countdown_label">Paradise Countdown</string>
+    <string name="widget_countdown_description">Counting down the days to our Seychelles trip.</string>
+    
+    <string name="widget_memory_label">Memory Lane</string>
+    <string name="widget_memory_description">A rotating gallery of our favorite shared memories.</string>
+    
+    <string name="widget_packing_label">Packing List</string>
+    <string name="widget_packing_description">Stay organized with our Seychelles packing checklist.</string>
+    
+    <string name="widget_itinerary_label">Trip Itinerary</string>
+    <string name="widget_itinerary_description">Keep track of our daily adventures in the Seychelles.</string>
+</resources>

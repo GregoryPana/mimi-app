@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/home_screen.dart';
 import '../screens/shared_hub_screen.dart';
 import '../screens/surprise_gift_screen.dart';
+import '../screens/music_player_screen.dart';
 import '../theme.dart';
 import '../screens/favorites_screen.dart';
 import '../widgets/persistent_header.dart';
@@ -28,6 +29,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     FavoritesScreen(),
     SurpriseGiftScreen(),
     SharedHubScreen(),
+    MusicPlayerScreen(),
   ];
 
   @override
@@ -36,7 +38,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listen(sharedNotesProvider, (previous, next) {
       final items = next.valueOrNull;
       final prevItems = previous?.valueOrNull;
-      if (items != null && prevItems != null && items.length > prevItems.length) {
+      if (items != null &&
+          prevItems != null &&
+          items.length > prevItems.length) {
         final newNote = items.first;
         NotificationService.instance.showInstantNotification(
           id: 101,
@@ -49,7 +53,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listen(sharedImagesProvider, (previous, next) {
       final items = next.valueOrNull;
       final prevItems = previous?.valueOrNull;
-      if (items != null && prevItems != null && items.length > prevItems.length) {
+      if (items != null &&
+          prevItems != null &&
+          items.length > prevItems.length) {
         final newImg = items.first;
         NotificationService.instance.showInstantNotification(
           id: 102,
@@ -62,7 +68,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listen(watchlistProvider, (previous, next) {
       final items = next.valueOrNull;
       final prevItems = previous?.valueOrNull;
-      if (items != null && prevItems != null && items.length > prevItems.length) {
+      if (items != null &&
+          prevItems != null &&
+          items.length > prevItems.length) {
         final newMovie = items.first;
         NotificationService.instance.showInstantNotification(
           id: 103,
@@ -75,7 +83,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listen(seychellesPackingProvider, (previous, next) {
       final items = next.valueOrNull;
       final prevItems = previous?.valueOrNull;
-      if (items != null && prevItems != null && items.length > prevItems.length) {
+      if (items != null &&
+          prevItems != null &&
+          items.length > prevItems.length) {
         final newItem = items.last; // Packing is ordered _createdAt asc
         NotificationService.instance.showInstantNotification(
           id: 104,
@@ -88,7 +98,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listen(seychellesItineraryProvider, (previous, next) {
       final items = next.valueOrNull;
       final prevItems = previous?.valueOrNull;
-      if (items != null && prevItems != null && items.length > prevItems.length) {
+      if (items != null &&
+          prevItems != null &&
+          items.length > prevItems.length) {
         final newItem = items.last; // Itinerary is ordered _createdAt asc
         NotificationService.instance.showInstantNotification(
           id: 105,
@@ -102,16 +114,13 @@ class _AppShellState extends ConsumerState<AppShell> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: _screens,
-            ),
+            child: IndexedStack(index: _currentIndex, children: _screens),
           ),
-          const Positioned(
+          Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: PersistentHeader(),
+            child: PersistentHeader(isDarkMode: _currentIndex == 4),
           ),
         ],
       ),
@@ -153,9 +162,15 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
                 _NavItem(
                   icon: Icons.cloud_outlined,
-                  label: 'Cloud',
+                  label: 'Shared',
                   isActive: _currentIndex == 3,
                   onTap: () => setState(() => _currentIndex = 3),
+                ),
+                _NavItem(
+                  icon: Icons.library_music_rounded,
+                  label: 'Music',
+                  isActive: _currentIndex == 4,
+                  onTap: () => setState(() => _currentIndex = 4),
                 ),
               ],
             ),
@@ -200,7 +215,9 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? AppColors.pastelPink : AppColors.textSecondary,
+                color: isActive
+                    ? AppColors.pastelPink
+                    : AppColors.textSecondary,
               ),
             ),
             if (isActive)
@@ -219,4 +236,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-

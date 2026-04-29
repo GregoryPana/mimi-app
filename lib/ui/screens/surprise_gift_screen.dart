@@ -33,7 +33,8 @@ class SurpriseGiftScreen extends ConsumerWidget {
           ),
           child: progressAsync.when(
             data: (progress) {
-              final progressUnlocked = progress.timelineCompleted && progress.galleryCompleted;
+              final progressUnlocked =
+                  progress.timelineCompleted && progress.galleryCompleted;
               final now = DateTime.now();
               final anniversaryDate = DateTime(now.year, 2, 2);
               final dateUnlocked = !now.isBefore(anniversaryDate);
@@ -58,10 +59,18 @@ class SurpriseGiftScreen extends ConsumerWidget {
                                     color: AppColors.pastelPeach,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: const Icon(LucideIcons.calendarHeart, size: 22),
+                                  child: const Icon(
+                                    LucideIcons.calendarHeart,
+                                    size: 22,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
-                                Text('Almost there', style: Theme.of(context).textTheme.titleMedium),
+                                Text(
+                                  'Almost there',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -79,27 +88,51 @@ class SurpriseGiftScreen extends ConsumerWidget {
                   padding: EdgeInsets.zero,
                   children: [
                     PastelCard(
+                      padding: const EdgeInsets.all(18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.all(11),
                                 decoration: BoxDecoration(
-                                  color: AppColors.pastelLavender,
-                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      AppColors.pastelLavender,
+                                      Color(0xFF7D5AD8),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Icon(LucideIcons.lock, size: 22),
+                                child: const Icon(
+                                  LucideIcons.lock,
+                                  size: 22,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(width: 12),
-                              Text('Locked for now', style: Theme.of(context).textTheme.titleMedium),
+                              Text(
+                                'Locked for now',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
                           Text(
                             'Complete both to unlock your surprise, my love.',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.5,
+                                ),
                           ),
                         ],
                       ),
@@ -130,12 +163,15 @@ class SurpriseGiftScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Happy 4 Years Together ❤️', style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          'Happy 4 Years Together ❤️',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                         const SizedBox(height: 10),
-                      Text(
-                        'Happy Anniversary my love ❤️\n\nBaby… today isn’t just a date to me.\nIt’s a reminder of how lucky I am that I found you, and that we’ve kept choosing each other through everything.\n\nMimi, from the day it started… you became more than just someone I love.\nYou became my peace. My safe place. My comfort.\nYou became the person I think about when something good happens, the person I want to run to when life gets heavy, and the person I want beside me in every future I can imagine.\n\nI love you for the big things — the way you care, the way you love with your whole heart, the way you make the people around you feel seen.\nBut I also love you for the little things…\nThe way you smile when you’re happy, the way your voice changes when you’re excited, the way you can turn a normal moment into something I never want to forget.\n\nBaby, you’ve made me feel loved in a way that’s real.\nNot perfect… but honest.\nThe kind of love that feels like home.\n\nAnd I just want you to know that I don’t take you for granted.\nI notice the effort you put in.\nI notice the love you give.\nI notice the way you show up even when you’re tired, even when things aren’t easy.\nAnd I’m so proud of you, Mimi… more than you know.\n\nThank you for being my baby.\nThank you for being my best friend.\nThank you for being the one person who can calm my heart just by being near me.\n\nI promise you this:\nI will keep choosing you.\nI will keep loving you gently.\nI will keep protecting what we have.\nI will keep trying, learning, growing — for you, for us, for the life we’re building together.\n\nHappy 4 Year Anniversary Mimi 💕\nYou’re my favorite thing in this world… and I’m grateful that I get to love you.\n\nAlways you. Always us. ❤️💙 💜',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                        Text(
+                          'Happy Anniversary my love ❤️\n\nBaby… today isn’t just a date to me.\nIt’s a reminder of how lucky I am that I found you, and that we’ve kept choosing each other through everything.\n\nMimi, from the day it started… you became more than just someone I love.\nYou became my peace. My safe place. My comfort.\nYou became the person I think about when something good happens, the person I want to run to when life gets heavy, and the person I want beside me in every future I can imagine.\n\nI love you for the big things — the way you care, the way you love with your whole heart, the way you make the people around you feel seen.\nBut I also love you for the little things…\nThe way you smile when you’re happy, the way your voice changes when you’re excited, the way you can turn a normal moment into something I never want to forget.\n\nBaby, you’ve made me feel loved in a way that’s real.\nNot perfect… but honest.\nThe kind of love that feels like home.\n\nAnd I just want you to know that I don’t take you for granted.\nI notice the effort you put in.\nI notice the love you give.\nI notice the way you show up even when you’re tired, even when things aren’t easy.\nAnd I’m so proud of you, Mimi… more than you know.\n\nThank you for being my baby.\nThank you for being my best friend.\nThank you for being the one person who can calm my heart just by being near me.\n\nI promise you this:\nI will keep choosing you.\nI will keep loving you gently.\nI will keep protecting what we have.\nI will keep trying, learning, growing — for you, for us, for the life we’re building together.\n\nHappy 4 Year Anniversary Mimi 💕\nYou’re my favorite thing in this world… and I’m grateful that I get to love you.\n\nAlways you. Always us. ❤️💙 💜',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -159,16 +195,35 @@ class _ChecklistItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleColor = done ? AppColors.textPrimary : const Color(0xFF636363);
+    final iconColor = done ? AppColors.success : const Color(0xFF7A7A7A);
+
     return PastelCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Icon(
-            done ? LucideIcons.checkCircle2 : LucideIcons.circle,
-            color: done ? AppColors.success : AppColors.textMuted,
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              done ? LucideIcons.checkCircle2 : LucideIcons.circle,
+              color: iconColor,
+              size: 19,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: titleColor,
+                fontWeight: done ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),

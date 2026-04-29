@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
 import '../data/content_repository.dart';
 import 'notification_service.dart';
@@ -19,9 +20,10 @@ final contentProvider = FutureProvider<ContentData>((ref) async {
   return ref.watch(contentRepositoryProvider).loadAll();
 });
 
-final progressControllerProvider = AsyncNotifierProvider<AppProgressController, AppProgressState>(
-  AppProgressController.new,
-);
+final progressControllerProvider =
+    AsyncNotifierProvider<AppProgressController, AppProgressState>(
+      AppProgressController.new,
+    );
 
 final authorProvider = AsyncNotifierProvider<AuthorController, String>(
   AuthorController.new,
@@ -48,7 +50,8 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
     final loaded = await repo.load();
     final content = ref.watch(contentProvider).valueOrNull;
     final galleryCount = content?.gallery.length ?? 0;
-    final galleryCompleted = galleryCount > 0 && loaded.galleryViewedIds.length >= galleryCount;
+    final galleryCompleted =
+        galleryCount > 0 && loaded.galleryViewedIds.length >= galleryCount;
     return loaded.copyWith(galleryCompleted: galleryCompleted);
   }
 
@@ -153,8 +156,11 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
       const Duration(hours: 14),
     ];
     for (var i = 0; i < times.length; i++) {
-      final scheduled = DateTime(target.year, target.month, target.day)
-          .add(times[i]);
+      final scheduled = DateTime(
+        target.year,
+        target.month,
+        target.day,
+      ).add(times[i]);
       await NotificationService.instance.scheduleValentinesReminder(
         scheduledDate: scheduled,
         notificationId: NotificationService.valentinesNotificationId + i,
@@ -186,7 +192,7 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
   Future<void> updateLastViewedSection(String section) async {
     final current = state.value ?? AppProgressState.initial();
     if (current.lastViewedSection == section) return;
-    
+
     final next = current.copyWith(lastViewedSection: section);
     state = AsyncData(next);
     await ref.read(progressRepositoryProvider).save(next);
@@ -206,9 +212,33 @@ class AppProgressController extends AsyncNotifier<AppProgressState> {
   }
 }
 
-final userGalleryControllerProvider = AsyncNotifierProvider<UserGalleryController, List<UserGalleryCollection>>(
-  UserGalleryController.new,
-);
+final userGalleryControllerProvider =
+    AsyncNotifierProvider<UserGalleryController, List<UserGalleryCollection>>(
+      UserGalleryController.new,
+    );
+
+final musicAccentColorProvider =
+    AsyncNotifierProvider<MusicAccentColorController, Color>(
+      MusicAccentColorController.new,
+    );
+
+class MusicAccentColorController extends AsyncNotifier<Color> {
+  static const _kPrefKey = 'music_accent_color';
+  static const _kDefaultColor = Color(0xFF1ED760);
+
+  @override
+  Future<Color> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getInt(_kPrefKey);
+    return raw == null ? _kDefaultColor : Color(raw);
+  }
+
+  Future<void> setColor(Color color) async {
+    state = AsyncData(color);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kPrefKey, color.toARGB32());
+  }
+}
 
 class UserGalleryController extends AsyncNotifier<List<UserGalleryCollection>> {
   @override
@@ -231,7 +261,11 @@ class UserGalleryController extends AsyncNotifier<List<UserGalleryCollection>> {
     await UserGalleryRepository(prefs).saveCollections(next);
   }
 
-  Future<void> addImageToCollection(String collectionId, String filePath, String caption) async {
+  Future<void> addImageToCollection(
+    String collectionId,
+    String filePath,
+    String caption,
+  ) async {
     final current = state.value ?? [];
     final next = current.map((c) {
       if (c.id == collectionId) {

@@ -1,7 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="MIMI APP"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -31,6 +33,66 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <receiver android:name=".UsWidgetProvider" android:exported="false" android:label="@string/widget_us_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_us_info" />
+        </receiver>
+
+        <receiver android:name=".CountdownWidgetProvider" android:exported="false" android:label="@string/widget_countdown_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_countdown_info" />
+        </receiver>
+
+        <receiver android:name=".MemoryWidgetProvider" android:exported="false" android:label="@string/widget_memory_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_memory_info" />
+        </receiver>
+
+        <receiver android:name=".PackingWidgetProvider" android:exported="false" android:label="@string/widget_packing_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_packing_info" />
+        </receiver>
+
+        <receiver android:name=".ItineraryWidgetProvider" android:exported="false" android:label="@string/widget_itinerary_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_itinerary_info" />
+        </receiver>
+
+        <service android:name=".PackingWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <service android:name=".ItineraryWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

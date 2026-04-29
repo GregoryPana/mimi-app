@@ -10,11 +10,14 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../core/constants/app_config.dart';
 import '../../data/sanity_repository.dart';
+import '../../app/widget_sync_service.dart';
 import '../../app/providers.dart';
 import '../theme.dart';
+import '../widgets/sanity_error_state.dart';
 
 class SeychellesScreen extends ConsumerStatefulWidget {
-  const SeychellesScreen({super.key});
+  final int initialTab;
+  const SeychellesScreen({super.key, this.initialTab = 0});
 
   @override
   ConsumerState<SeychellesScreen> createState() => _SeychellesScreenState();
@@ -28,11 +31,15 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
 
   late AnimationController _waveController;
   late AnimationController _floatController;
+  final Map<String, bool> _loadingPackingItems = {};
+  bool _isAddingItem = false;
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 8));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 8),
+    );
 
     _waveController = AnimationController(
       vsync: this,
@@ -76,7 +83,22 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
     final flightDone = flightRemaining.isNegative;
     final daysLeft = flightDone ? 0 : flightRemaining.inDays;
 
+    ref.listen(seychellesPackingProvider, (prev, next) {
+      if (next is AsyncData) {
+        final items = next.value as List<dynamic>;
+        setState(() {
+          _loadingPackingItems.removeWhere((id, targetState) {
+            final item =
+                items.firstWhere((i) => i['_id'] == id, orElse: () => null);
+            if (item == null) return true; // Item deleted
+            return item['isPacked'] == targetState;
+          });
+        });
+      }
+    });
+
     return DefaultTabController(
+      initialIndex: widget.initialTab,
       length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFF051937),
@@ -149,9 +171,9 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
                 ),
               ),
             ),
-            
+
             Positioned.fill(child: _StarField()),
-            
+
             TabBarView(
               children: [
                 _buildCountdownTab(context, flightDone, daysLeft),
@@ -179,18 +201,28 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          heroTag: 'seychelles_party_fab',
-          backgroundColor: const Color(0xFF14A8A4),
-          onPressed: () => _confettiController.play(),
-          child: const Icon(LucideIcons.partyPopper, color: Colors.white),
+        floatingActionButton: SizedBox(
+          height: 56,
+          child: FloatingActionButton(
+            heroTag: 'seychelles_party_fab',
+            backgroundColor: const Color(0xFF14A8A4),
+            onPressed: () => _confettiController.play(),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(LucideIcons.partyPopper, color: Colors.white),
+          ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       ),
     );
   }
 
-  Widget _buildCountdownTab(BuildContext context, bool flightDone, int daysLeft) {
+  Widget _buildCountdownTab(
+    BuildContext context,
+    bool flightDone,
+    int daysLeft,
+  ) {
     return Stack(
       children: [
         // Animated wave at bottom
@@ -285,7 +317,9 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,57 +335,117 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const Icon(LucideIcons.package, color: Colors.white24, size: 20),
+                            const Icon(
+                              LucideIcons.package,
+                              color: Colors.white24,
+                              size: 20,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         ...entry.value.map((item) {
                           final isPacked = item['isPacked'] as bool? ?? false;
+                          final itemId = item['_id'] as String;
+                          final isLoading =
+                              _loadingPackingItems.containsKey(itemId);
+
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: InkWell(
-                              onTap: () {
-                                ref.read(sanityRepositoryProvider).togglePackingItem(
-                                      item['_id'] as String,
-                                      !isPacked,
-                                    );
-                              },
-                              onLongPress: () => _confirmDelete(
-                                context,
-                                'Delete item?',
-                                () => ref
-                                    .read(sanityRepositoryProvider)
-                                    .deleteSeychellesPackingItem(item['_id'] as String),
-                              ),
+                              onTap: isLoading
+                                  ? null
+                                  : () async {
+                                      setState(() =>
+                                          _loadingPackingItems[itemId] =
+                                              !isPacked);
+                                      try {
+                                        await ref
+                                            .read(sanityRepositoryProvider)
+                                            .togglePackingItem(
+                                              itemId,
+                                              !isPacked,
+                                            );
+                                        await WidgetSyncService.syncAll(ref);
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          setState(() => _loadingPackingItems
+                                              .remove(itemId));
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content:
+                                                  Text(sanityErrorMessage(e)),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                              onLongPress: isLoading
+                                  ? null
+                                  : () => _confirmDelete(
+                                        context,
+                                        'Delete item?',
+                                        () => ref
+                                            .read(sanityRepositoryProvider)
+                                            .deleteSeychellesPackingItem(
+                                              itemId,
+                                            ),
+                                      ),
                               borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      isPacked ? LucideIcons.checkCircle2 : LucideIcons.circle,
-                                      size: 20,
-                                      color: isPacked
-                                          ? const Color(0xFF14A8A4)
-                                          : Colors.white.withValues(alpha: 0.4),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        item['item'] as String? ?? '',
-                                        style: TextStyle(
-                                          color: isPacked ? Colors.white54 : Colors.white,
-                                          fontSize: 15,
-                                          decoration: isPacked ? TextDecoration.lineThrough : null,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 200),
+                                opacity: isLoading ? 0.6 : 1.0,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                    horizontal: 4,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: isLoading
+                                            ? const CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Color(0xFF14A8A4),
+                                              )
+                                            : Icon(
+                                                isPacked
+                                                    ? LucideIcons.checkCircle2
+                                                    : LucideIcons.circle,
+                                                size: 20,
+                                                color: isPacked
+                                                    ? const Color(0xFF14A8A4)
+                                                    : Colors.white
+                                                        .withValues(alpha: 0.4),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          item['item'] as String? ?? '',
+                                          style: TextStyle(
+                                            color: isPacked
+                                                ? Colors.white54
+                                                : Colors.white,
+                                            fontSize: 15,
+                                            decoration: isPacked
+                                                ? TextDecoration.lineThrough
+                                                : null,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    if (item['addedBy'] != null)
-                                      Text(
-                                        item['addedBy'] as String,
-                                        style: const TextStyle(color: Colors.white24, fontSize: 10),
-                                      ),
-                                  ],
+                                      if (item['addedBy'] != null)
+                                        Text(
+                                          item['addedBy'] as String,
+                                          style: const TextStyle(
+                                            color: Colors.white24,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -366,18 +460,33 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
             Positioned(
               right: 24,
               bottom: 24,
-              child: FloatingActionButton.extended(
-                onPressed: () => _showAddPackingDialog(context),
-                backgroundColor: const Color(0xFF14A8A4),
-                icon: const Icon(LucideIcons.plus, color: Colors.white),
-                label: const Text('Add Item', style: TextStyle(color: Colors.white)),
+              child: SizedBox(
+                height: 56,
+                child: FloatingActionButton.extended(
+                  onPressed: () => _showAddPackingDialog(context),
+                  backgroundColor: const Color(0xFF14A8A4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  icon: const Icon(LucideIcons.plus, color: Colors.white),
+                  label: const Text(
+                    'Add Item',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ),
             ),
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      error: (e, _) => SanityErrorState(
+        title: 'Could not load packing list',
+        error: e,
+        onRetry: () => ref.invalidate(seychellesPackingProvider),
+        dark: true,
+      ),
     );
   }
 
@@ -408,128 +517,169 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
                 children: items.asMap().entries.map((entry) {
                   final item = entry.value;
                   return IntrinsicHeight(
-                    child: Row(
-                      children: [
-                        Column(
+                        child: Row(
                           children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF14A8A4),
-                                shape: BoxShape.circle,
-                              ),
+                            Column(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF14A8A4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Container(
+                                    width: 2,
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(width: 20),
                             Expanded(
-                              child: Container(
-                                width: 2,
-                                color: Colors.white.withValues(alpha: 0.2),
+                              child: InkWell(
+                                onLongPress: () => _confirmDelete(
+                                  context,
+                                  'Delete plan?',
+                                  () => ref
+                                      .read(sanityRepositoryProvider)
+                                      .deleteSeychellesItineraryItem(
+                                        item['_id'] as String,
+                                      ),
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 24),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.05,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  item['day'] as String? ?? '',
+                                                  style: const TextStyle(
+                                                    color: Colors.white60,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  item['title'] as String? ??
+                                                      '',
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF14A8A4),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () => _confirmDelete(
+                                              context,
+                                              'Delete plan?',
+                                              () => ref
+                                                  .read(
+                                                    sanityRepositoryProvider,
+                                                  )
+                                                  .deleteSeychellesItineraryItem(
+                                                    item['_id'] as String,
+                                                  ),
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            icon: const Icon(
+                                              LucideIcons.trash2,
+                                              size: 14,
+                                              color: Colors.white24,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        item['description'] as String? ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      if (item['addedBy'] != null) ...[
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Added by ${item['addedBy']}',
+                                          style: const TextStyle(
+                                            color: Colors.white24,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: InkWell(
-                            onLongPress: () => _confirmDelete(
-                              context,
-                              'Delete plan?',
-                              () => ref
-                                  .read(sanityRepositoryProvider)
-                                  .deleteSeychellesItineraryItem(item['_id'] as String),
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 24),
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                              ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item['day'] as String? ?? '',
-                                              style: const TextStyle(
-                                                  color: Colors.white60,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700),
-                                            ),
-                                            Text(
-                                              item['title'] as String? ?? '',
-                                              style: const TextStyle(
-                                                  color: Color(0xFF14A8A4),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w800),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () => _confirmDelete(
-                                          context,
-                                          'Delete plan?',
-                                          () => ref
-                                              .read(sanityRepositoryProvider)
-                                              .deleteSeychellesItineraryItem(item['_id'] as String),
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        icon: const Icon(LucideIcons.trash2, size: 14, color: Colors.white24),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    item['description'] as String? ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (item['addedBy'] != null) ...[
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'Added by ${item['addedBy']}',
-                                      style: const TextStyle(color: Colors.white24, fontSize: 10),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ).animate(delay: (entry.key * 100).ms).fadeIn().slideY(begin: 0.1);
+                      )
+                      .animate(delay: (entry.key * 100).ms)
+                      .fadeIn()
+                      .slideY(begin: 0.1);
                 }).toList(),
               ),
             ),
             Positioned(
               right: 24,
               bottom: 24,
-              child: FloatingActionButton.extended(
-                onPressed: () => _showAddItineraryDialog(context),
-                backgroundColor: const Color(0xFF14A8A4),
-                icon: const Icon(LucideIcons.plus, color: Colors.white),
-                label: const Text('Add Plan', style: TextStyle(color: Colors.white)),
+              child: SizedBox(
+                height: 56,
+                child: FloatingActionButton.extended(
+                  onPressed: () => _showAddItineraryDialog(context),
+                  backgroundColor: const Color(0xFF14A8A4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  icon: const Icon(LucideIcons.plus, color: Colors.white),
+                  label: const Text(
+                    'Add Plan',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ),
             ),
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      error: (e, _) => SanityErrorState(
+        title: 'Could not load itinerary',
+        error: e,
+        onRetry: () => ref.invalidate(seychellesItineraryProvider),
+        dark: true,
+      ),
     );
   }
 
@@ -547,7 +697,11 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
           const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -578,7 +732,10 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF0A3D6B),
-        title: const Text('Add Packing Item', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Add Packing Item',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -605,21 +762,64 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (itemController.text.isNotEmpty) {
-                ref.read(sanityRepositoryProvider).addPackingItem(
-                      category: catController.text,
-                      item: itemController.text,
-                      addedBy: ref.read(authorProvider).value ?? 'Mimi Boy',
-                    );
-                Navigator.pop(context);
-              }
+          StatefulBuilder(
+            builder: (context, setDialogState) {
+              return ElevatedButton(
+                onPressed: _isAddingItem
+                    ? null
+                    : () async {
+                        if (itemController.text.isNotEmpty) {
+                          setDialogState(() => _isAddingItem = true);
+                          try {
+                            await ref
+                                .read(sanityRepositoryProvider)
+                                .addPackingItem(
+                                  category: catController.text,
+                                  item: itemController.text,
+                                  addedBy: ref.read(authorProvider).value ??
+                                      'Mimi Boy',
+                                );
+                            await WidgetSyncService.syncAll(ref);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(sanityErrorMessage(e))),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setDialogState(() => _isAddingItem = false);
+                            }
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF14A8A4),
+                  minimumSize: const Size(80, 40),
+                ),
+                child: _isAddingItem
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Add',
+                        style: TextStyle(color: Colors.white),
+                      ),
+              );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF14A8A4)),
-            child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -635,7 +835,10 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF0A3D6B),
-        title: const Text('Add Trip Plan', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Add Trip Plan',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -671,21 +874,38 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (titleController.text.isNotEmpty) {
-                ref.read(sanityRepositoryProvider).addItineraryItem(
-                      day: dayController.text,
-                      title: titleController.text,
-                      description: descController.text,
-                      addedBy: ref.read(authorProvider).value ?? 'Mimi Boy',
+                try {
+                  await ref
+                      .read(sanityRepositoryProvider)
+                      .addItineraryItem(
+                        day: dayController.text,
+                        title: titleController.text,
+                        description: descController.text,
+                        addedBy: ref.read(authorProvider).value ?? 'Mimi Boy',
+                      );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(sanityErrorMessage(e))),
                     );
-                Navigator.pop(context);
+                  }
+                }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF14A8A4)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF14A8A4),
+            ),
             child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -693,7 +913,11 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
     );
   }
 
-  void _confirmDelete(BuildContext context, String title, VoidCallback onDelete) {
+  void _confirmDelete(
+    BuildContext context,
+    String title,
+    Future<void> Function() onDelete,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -702,12 +926,26 @@ class _SeychellesScreenState extends ConsumerState<SeychellesScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
           ElevatedButton(
-            onPressed: () {
-              onDelete();
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                await onDelete();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(sanityErrorMessage(e))),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
@@ -729,12 +967,10 @@ class _HeroPhoto extends StatelessWidget {
     return AnimatedBuilder(
       animation: floatController,
       builder: (_, child) {
-        final offset = Tween<double>(begin: -4, end: 4)
-            .evaluate(CurvedAnimation(parent: floatController, curve: Curves.easeInOut));
-        return Transform.translate(
-          offset: Offset(0, offset),
-          child: child,
+        final offset = Tween<double>(begin: -4, end: 4).evaluate(
+          CurvedAnimation(parent: floatController, curve: Curves.easeInOut),
         );
+        return Transform.translate(offset: Offset(0, offset), child: child);
       },
       child: Container(
         height: 220,
@@ -764,7 +1000,11 @@ class _HeroPhoto extends StatelessWidget {
                   ),
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.palmtree, size: 64, color: Colors.white54),
+                  child: Icon(
+                    LucideIcons.palmtree,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
                 ),
               ),
             ),
@@ -800,10 +1040,7 @@ class _HeroPhoto extends StatelessWidget {
                   ),
                   Text(
                     'Indian Ocean, Africa 🌊',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
@@ -812,7 +1049,11 @@ class _HeroPhoto extends StatelessWidget {
             const Positioned(
               top: 16,
               right: 16,
-              child: Icon(LucideIcons.planeTakeoff, size: 28, color: Colors.white60),
+              child: Icon(
+                LucideIcons.planeTakeoff,
+                size: 28,
+                color: Colors.white60,
+              ),
             ),
           ],
         ),
@@ -832,34 +1073,37 @@ class _DaysHero extends StatelessWidget {
     return Column(
       children: [
         RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              color: Colors.white,
-              height: 1.1,
-            ),
-            children: [
-              TextSpan(
-                text: '$daysLeft',
+              textAlign: TextAlign.center,
+              text: TextSpan(
                 style: const TextStyle(
-                  fontSize: 80,
-                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Poppins',
                   color: Colors.white,
+                  height: 1.1,
                 ),
+                children: [
+                  TextSpan(
+                    text: '$daysLeft',
+                    style: const TextStyle(
+                      fontSize: 80,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const TextSpan(
+                    text: '\ndays to go',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white60,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
               ),
-              const TextSpan(
-                text: '\ndays to go',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white60,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.9, 0.9)),
+            )
+            .animate()
+            .fadeIn(duration: 500.ms)
+            .scale(begin: const Offset(0.9, 0.9)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -887,10 +1131,7 @@ class _ArrivalBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text(
-          '🎉',
-          style: TextStyle(fontSize: 64),
-        ),
+        const Text('🎉', style: TextStyle(fontSize: 64)),
         const SizedBox(height: 12),
         const Text(
           "We're in Seychelles!",
@@ -910,7 +1151,10 @@ class _ArrivalBanner extends StatelessWidget {
           ),
         ),
       ],
-    ).animate().fadeIn().scale(begin: const Offset(0.8, 0.8), curve: Curves.elasticOut);
+    ).animate().fadeIn().scale(
+      begin: const Offset(0.8, 0.8),
+      curve: Curves.elasticOut,
+    );
   }
 }
 
@@ -1017,19 +1261,28 @@ class _CountdownCard extends StatelessWidget {
                     ),
                     _Separator(),
                     _SplitFlapUnit(
-                      value: (remaining.inHours % 24).toString().padLeft(2, '0'),
+                      value: (remaining.inHours % 24).toString().padLeft(
+                        2,
+                        '0',
+                      ),
                       label: 'Hrs',
                       accentColor: accentColors[0],
                     ),
                     _Separator(),
                     _SplitFlapUnit(
-                      value: (remaining.inMinutes % 60).toString().padLeft(2, '0'),
+                      value: (remaining.inMinutes % 60).toString().padLeft(
+                        2,
+                        '0',
+                      ),
                       label: 'Min',
                       accentColor: accentColors[0],
                     ),
                     _Separator(),
                     _SplitFlapUnit(
-                      value: (remaining.inSeconds % 60).toString().padLeft(2, '0'),
+                      value: (remaining.inSeconds % 60).toString().padLeft(
+                        2,
+                        '0',
+                      ),
                       label: 'Sec',
                       accentColor: accentColors[0],
                     ),
@@ -1137,32 +1390,45 @@ class _TripHighlights extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: _highlights.asMap().entries.map((e) {
                   final item = e.value;
-                  return Column(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(item.icon, color: Colors.white70, size: 22),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ).animate(delay: (e.key * 80).ms).fadeIn().slideY(begin: 0.1);
+                  return Expanded(
+                    child:
+                        Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    item.icon,
+                                    color: Colors.white70,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.visible,
+                                ),
+                              ],
+                            )
+                            .animate(delay: (e.key * 80).ms)
+                            .fadeIn()
+                            .slideY(begin: 0.1),
+                  );
                 }).toList(),
               ),
             ],
@@ -1178,10 +1444,7 @@ class _TripHighlights extends StatelessWidget {
 class _StarField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _StarPainter(),
-      size: Size.infinite,
-    );
+    return CustomPaint(painter: _StarPainter(), size: Size.infinite);
   }
 }
 
@@ -1190,7 +1453,10 @@ class _StarPainter extends CustomPainter {
   static final List<Offset> _positions = List.generate(60, (_) {
     return Offset(_rng.nextDouble(), _rng.nextDouble() * 0.55);
   });
-  static final List<double> _sizes = List.generate(60, (_) => _rng.nextDouble() * 2 + 0.5);
+  static final List<double> _sizes = List.generate(
+    60,
+    (_) => _rng.nextDouble() * 2 + 0.5,
+  );
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1216,12 +1482,36 @@ class _WavePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _drawWave(canvas, size, phase, const Color(0xFF14A8A4).withValues(alpha: 0.3), 0.6);
-    _drawWave(canvas, size, phase + 0.3, const Color(0xFF0E6E8A).withValues(alpha: 0.4), 0.75);
-    _drawWave(canvas, size, phase + 0.6, const Color(0xFF0A3D6B).withValues(alpha: 0.5), 0.9);
+    _drawWave(
+      canvas,
+      size,
+      phase,
+      const Color(0xFF14A8A4).withValues(alpha: 0.3),
+      0.6,
+    );
+    _drawWave(
+      canvas,
+      size,
+      phase + 0.3,
+      const Color(0xFF0E6E8A).withValues(alpha: 0.4),
+      0.75,
+    );
+    _drawWave(
+      canvas,
+      size,
+      phase + 0.6,
+      const Color(0xFF0A3D6B).withValues(alpha: 0.5),
+      0.9,
+    );
   }
 
-  void _drawWave(Canvas canvas, Size size, double phaseOffset, Color color, double heightFraction) {
+  void _drawWave(
+    Canvas canvas,
+    Size size,
+    double phaseOffset,
+    Color color,
+    double heightFraction,
+  ) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
@@ -1232,8 +1522,12 @@ class _WavePainter extends CustomPainter {
 
     path.moveTo(0, baseline);
     for (var x = 0.0; x <= size.width; x++) {
-      final y = baseline +
-          math.sin((x / size.width * 2 * math.pi) + (phaseOffset * 2 * math.pi)) * waveHeight;
+      final y =
+          baseline +
+          math.sin(
+                (x / size.width * 2 * math.pi) + (phaseOffset * 2 * math.pi),
+              ) *
+              waveHeight;
       path.lineTo(x, y);
     }
     path.lineTo(size.width, size.height);
@@ -1276,9 +1570,10 @@ class _SplitFlapDigitState extends State<_SplitFlapDigit>
       vsync: this,
       duration: const Duration(milliseconds: 380),
     );
-    _animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         setState(() => _currentValue = _nextValue);
@@ -1354,8 +1649,14 @@ class _SplitFlapDigitState extends State<_SplitFlapDigit>
 
           return Stack(
             children: [
-              Positioned(top: 0, child: _buildHalf(_nextValue, Alignment.topCenter)),
-              Positioned(bottom: 0, child: _buildHalf(_currentValue, Alignment.bottomCenter)),
+              Positioned(
+                top: 0,
+                child: _buildHalf(_nextValue, Alignment.topCenter),
+              ),
+              Positioned(
+                bottom: 0,
+                child: _buildHalf(_currentValue, Alignment.bottomCenter),
+              ),
 
               if (isFirstHalf)
                 Positioned(

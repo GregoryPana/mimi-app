@@ -12,9 +12,11 @@ import '../../data/sanity_repository.dart';
 import '../theme.dart';
 import '../widgets/animated_gradient_background.dart';
 import '../widgets/pastel_card.dart';
+import '../widgets/sanity_error_state.dart';
 import '../widgets/skeleton_loader.dart';
 
 import '../../app/providers.dart';
+import '../../app/widget_sync_service.dart';
 
 class SharedHubScreen extends ConsumerStatefulWidget {
   const SharedHubScreen({super.key});
@@ -31,6 +33,9 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetSyncService.syncAll(ref);
+    });
   }
 
   @override
@@ -41,13 +46,19 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedGradientBackground(
-        child: Column(
+    return AnimatedGradientBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
           children: [
             // Custom Header area for Tabs
             Container(
-              padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 80, 20, 10),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.of(context).padding.top + 80,
+                20,
+                10,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -55,13 +66,21 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
                       controller: _tabController,
                       isScrollable: true,
                       tabAlignment: TabAlignment.start,
-                      indicatorColor: AppColors.pastelPink,
+                      indicatorColor: Theme.of(context).primaryColor,
                       indicatorSize: TabBarIndicatorSize.label,
-                      labelColor: AppColors.pastelPink,
-                      unselectedLabelColor: AppColors.textSecondary,
+                      labelColor: Theme.of(context).primaryColor,
+                      unselectedLabelColor: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                       dividerColor: Colors.transparent,
-                      labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                      ),
                       tabs: const [
                         Tab(text: 'Photos'),
                         Tab(text: 'Notes'),
@@ -85,21 +104,32 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
             ),
           ],
         ),
-      ),
-      floatingActionButton: AnimatedBuilder(
-        animation: _tabController,
-        builder: (context, _) {
-          final labels = ['Add Photo', 'Add Note', 'Add Movie'];
-          final icons = [LucideIcons.imagePlus, LucideIcons.pencil, LucideIcons.plus];
-          final idx = _tabController.index;
-          return FloatingActionButton.extended(
-            onPressed: () => _onFabTapped(context, idx),
-            backgroundColor: AppColors.pastelPink,
-            foregroundColor: Colors.white,
-            icon: Icon(icons[idx]),
-            label: Text(labels[idx]),
-          );
-        },
+        floatingActionButton: AnimatedBuilder(
+          animation: _tabController,
+          builder: (context, _) {
+            final labels = ['Add Photo', 'Add Note', 'Add Movie'];
+            final icons = [
+              LucideIcons.imagePlus,
+              LucideIcons.pencil,
+              LucideIcons.plus,
+            ];
+            final idx = _tabController.index;
+            return SizedBox(
+              height: 56,
+              child: FloatingActionButton.extended(
+                onPressed: () => _onFabTapped(context, idx),
+                backgroundColor: AppColors.pastelPink,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 3,
+                icon: Icon(icons[idx]),
+                label: Text(labels[idx]),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -132,8 +162,7 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
                 const SizedBox(height: 8),
                 _BottomSheetHandle(),
                 const SizedBox(height: 20),
-                Text('Who are you?',
-                    style: Theme.of(ctx).textTheme.titleSmall),
+                Text('Who are you?', style: Theme.of(ctx).textTheme.titleSmall),
                 const SizedBox(height: 16),
                 Row(
                   children: ['Mimi Boy', 'Mimi Girl'].map((name) {
@@ -183,7 +212,7 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
             ref.invalidate(sharedImagesProvider);
             if (context.mounted) _showSuccessSnack(context, 'Photo shared!');
           } catch (e) {
-            if (context.mounted) _showErrorSnack(context, 'Upload failed: $e');
+            if (context.mounted) _showErrorSnack(context, e);
           }
         },
       ),
@@ -201,15 +230,13 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
           Navigator.pop(ctx);
           final author = ref.read(authorProvider).value ?? 'Mimi Boy';
           try {
-            await ref.read(sanityRepositoryProvider).createNote(
-              title: title,
-              content: content,
-              author: author,
-            );
+            await ref
+                .read(sanityRepositoryProvider)
+                .createNote(title: title, content: content, author: author);
             ref.invalidate(sharedNotesProvider);
             if (context.mounted) _showSuccessSnack(context, 'Note shared!');
           } catch (e) {
-            if (context.mounted) _showErrorSnack(context, 'Error: $e');
+            if (context.mounted) _showErrorSnack(context, e);
           }
         },
       ),
@@ -227,14 +254,15 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
           Navigator.pop(ctx);
           final author = ref.read(authorProvider).value ?? 'Mimi Boy';
           try {
-            await ref.read(sanityRepositoryProvider).addMovie(
-              title: title,
-              addedBy: author,
-            );
+            await ref
+                .read(sanityRepositoryProvider)
+                .addMovie(title: title, addedBy: author);
             ref.invalidate(watchlistProvider);
-            if (context.mounted) _showSuccessSnack(context, 'Added to watchlist!');
+            if (context.mounted) {
+              _showSuccessSnack(context, 'Added to watchlist!');
+            }
           } catch (e) {
-            if (context.mounted) _showErrorSnack(context, 'Error: $e');
+            if (context.mounted) _showErrorSnack(context, e);
           }
         },
       ),
@@ -244,35 +272,56 @@ class _SharedHubScreenState extends ConsumerState<SharedHubScreen>
   void _showLoadingSnack(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Row(children: [
-          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-          const SizedBox(width: 12),
-          Text(message),
-        ]),
-        duration: const Duration(seconds: 30),
-        backgroundColor: AppColors.textPrimary,
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(message),
+            ],
+          ),
+          duration: const Duration(seconds: 30),
+          backgroundColor: AppColors.textPrimary,
+        ),
+      );
   }
 
   void _showSuccessSnack(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.pastelMint,
-        duration: const Duration(seconds: 2),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.pastelMint,
+          duration: const Duration(seconds: 2),
+        ),
+      );
   }
 
-  void _showErrorSnack(BuildContext context, String message) {
+  void _showErrorSnack(BuildContext context, Object error) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-        duration: const Duration(seconds: 4),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.wifiOff, size: 16, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(child: Text(sanityErrorMessage(error))),
+            ],
+          ),
+          backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 4),
+        ),
+      );
   }
 }
 
@@ -293,20 +342,29 @@ class _AuthorChip extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.pastelPink.withValues(alpha: 0.15),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(LucideIcons.user, size: 14, color: AppColors.pastelPink),
+              Icon(
+                LucideIcons.user,
+                size: 14,
+                color: Theme.of(context).primaryColor,
+              ),
               const SizedBox(width: 6),
-              Text(author,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.pastelPink,
-                  )),
+              Text(
+                author,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
             ],
           ),
         ),
@@ -339,22 +397,47 @@ class _ImagesTab extends ConsumerWidget {
             : ListView.builder(
                 padding: EdgeInsets.fromLTRB(20, topPad, 20, 100),
                 itemCount: images.length,
-                itemBuilder: (context, index) => _SharedImageCard(
-                  data: images[index],
-                  onDelete: () async {
-                    await ref.read(sanityRepositoryProvider).deleteDocument(images[index]['_id'] as String);
-                    ref.invalidate(sharedImagesProvider);
-                  },
-                ).animate().fadeIn(duration: 400.ms, delay: (index * 40).ms).slideY(begin: 0.05, end: 0),
+                itemBuilder: (context, index) =>
+                    _SharedImageCard(
+                          data: images[index],
+                          onDelete: () async {
+                            try {
+                              await ref
+                                  .read(sanityRepositoryProvider)
+                                  .deleteDocument(
+                                    images[index]['_id'] as String,
+                                  );
+                              ref.invalidate(sharedImagesProvider);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(sanityErrorMessage(e)),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        )
+                        .animate()
+                        .fadeIn(duration: 400.ms, delay: (index * 40).ms)
+                        .slideY(begin: 0.05, end: 0),
               ),
         loading: () => ListView(
           padding: EdgeInsets.fromLTRB(20, topPad, 20, 24),
-          children: List.generate(3, (i) => const Padding(
-            padding: EdgeInsets.only(bottom: 16),
-            child: SkeletonLoader(height: 280),
-          )),
+          children: List.generate(
+            3,
+            (i) => const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: SkeletonLoader(height: 280),
+            ),
+          ),
         ),
-        error: (err, _) => _ErrorState(error: err.toString()),
+        error: (err, _) => _ErrorState(
+          title: 'Could not load shared photos',
+          error: err,
+          onRetry: () => ref.invalidate(sharedImagesProvider),
+        ),
       ),
     );
   }
@@ -381,7 +464,9 @@ class _SharedImageCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
               child: imageUrl != null && imageUrl.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: imageUrl,
@@ -397,7 +482,10 @@ class _SharedImageCard extends StatelessWidget {
                         height: 240,
                         color: AppColors.pastelPeach.withValues(alpha: 0.08),
                         child: const Center(
-                          child: Icon(LucideIcons.imageOff, color: AppColors.pastelPeach),
+                          child: Icon(
+                            LucideIcons.imageOff,
+                            color: AppColors.pastelPeach,
+                          ),
                         ),
                       ),
                     )
@@ -405,7 +493,11 @@ class _SharedImageCard extends StatelessWidget {
                       height: 240,
                       color: AppColors.pastelPeach.withValues(alpha: 0.08),
                       child: const Center(
-                        child: Icon(LucideIcons.image, size: 40, color: AppColors.pastelPeach),
+                        child: Icon(
+                          LucideIcons.image,
+                          size: 40,
+                          color: AppColors.pastelPeach,
+                        ),
                       ),
                     ),
             ),
@@ -418,11 +510,22 @@ class _SharedImageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (caption.isNotEmpty)
-                          Text(caption, style: Theme.of(context).textTheme.titleSmall),
+                          Text(
+                            caption,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
                         const SizedBox(height: 4),
                         Text(
                           'Shared by $uploadedBy • $date',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
                       ],
                     ),
@@ -479,22 +582,42 @@ class _NotesTab extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final note = notes[index];
                   return _NoteCard(
-                    note: note,
-                    onDelete: () async {
-                      await ref.read(sanityRepositoryProvider).deleteDocument(note['_id'] as String);
-                      ref.invalidate(sharedNotesProvider);
-                    },
-                  ).animate().fadeIn(duration: 400.ms, delay: (index * 40).ms).slideY(begin: 0.05, end: 0);
+                        note: note,
+                        onDelete: () async {
+                          try {
+                            await ref
+                                .read(sanityRepositoryProvider)
+                                .deleteDocument(note['_id'] as String);
+                            ref.invalidate(sharedNotesProvider);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(sanityErrorMessage(e))),
+                              );
+                            }
+                          }
+                        },
+                      )
+                      .animate()
+                      .fadeIn(duration: 400.ms, delay: (index * 40).ms)
+                      .slideY(begin: 0.05, end: 0);
                 },
               ),
         loading: () => ListView(
           padding: EdgeInsets.fromLTRB(20, topPad, 20, 24),
-          children: List.generate(3, (i) => const Padding(
-            padding: EdgeInsets.only(bottom: 16),
-            child: SkeletonLoader(height: 120),
-          )),
+          children: List.generate(
+            3,
+            (i) => const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: SkeletonLoader(height: 120),
+            ),
+          ),
         ),
-        error: (err, _) => _ErrorState(error: err.toString()),
+        error: (err, _) => _ErrorState(
+          title: 'Could not load shared notes',
+          error: err,
+          onRetry: () => ref.invalidate(sharedNotesProvider),
+        ),
       ),
     );
   }
@@ -524,7 +647,9 @@ class _NoteCard extends StatelessWidget {
                 width: 4,
                 decoration: BoxDecoration(
                   color: accentColor,
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(22)),
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(22),
+                  ),
                 ),
               ),
               Expanded(
@@ -536,9 +661,12 @@ class _NoteCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.12),
+                              color: accentColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -546,13 +674,20 @@ class _NoteCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: accentColor,
+                                color: accentColor.withValues(alpha: 0.95),
                               ),
                             ),
                           ),
                           const Spacer(),
                           if (date.isNotEmpty)
-                            Text(date, style: Theme.of(context).textTheme.bodySmall),
+                            Text(
+                              date,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
                           IconButton(
                             onPressed: onDelete,
                             icon: const Icon(LucideIcons.trash2, size: 16),
@@ -564,12 +699,24 @@ class _NoteCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       if ((note['title'] as String? ?? '').isNotEmpty) ...[
-                        Text(note['title'] as String,
-                            style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          note['title'] as String,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
                         const SizedBox(height: 6),
                       ],
-                      Text(note['content'] as String? ?? '',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6)),
+                      Text(
+                        note['content'] as String? ?? '',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          height: 1.6,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -608,8 +755,12 @@ class _WatchlistTab extends ConsumerWidget {
       onRefresh: () => ref.refresh(watchlistProvider.future),
       child: watchlistAsync.when(
         data: (movies) {
-          final unwatched = movies.where((m) => !(m['isWatched'] as bool? ?? false)).toList();
-          final watched = movies.where((m) => m['isWatched'] as bool? ?? false).toList();
+          final unwatched = movies
+              .where((m) => !(m['isWatched'] as bool? ?? false))
+              .toList();
+          final watched = movies
+              .where((m) => m['isWatched'] as bool? ?? false)
+              .toList();
 
           return ListView(
             padding: EdgeInsets.fromLTRB(20, topPad, 20, 100),
@@ -623,49 +774,96 @@ class _WatchlistTab extends ConsumerWidget {
               if (unwatched.isNotEmpty) ...[
                 _SectionLabel(label: 'To Watch (${unwatched.length})'),
                 const SizedBox(height: 8),
-                ...unwatched.asMap().entries.map((e) => _MovieCard(
-                  movie: e.value,
-                  onToggle: () async {
-                    await ref.read(sanityRepositoryProvider)
-                        .setWatched(e.value['_id'] as String, true);
-                    ref.invalidate(watchlistProvider);
-                  },
-                  onDelete: () async {
-                    await ref.read(sanityRepositoryProvider)
-                        .deleteDocument(e.value['_id'] as String);
-                    ref.invalidate(watchlistProvider);
-                  },
-                ).animate().fadeIn(duration: 400.ms, delay: (e.key * 40).ms)),
+                ...unwatched.asMap().entries.map(
+                  (e) => _MovieCard(
+                    movie: e.value,
+                    onToggle: () async {
+                      try {
+                        await ref
+                            .read(sanityRepositoryProvider)
+                            .setWatched(e.value['_id'] as String, true);
+                        ref.invalidate(watchlistProvider);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(sanityErrorMessage(e))),
+                          );
+                        }
+                      }
+                    },
+                    onDelete: () async {
+                      try {
+                        await ref
+                            .read(sanityRepositoryProvider)
+                            .deleteDocument(e.value['_id'] as String);
+                        ref.invalidate(watchlistProvider);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(sanityErrorMessage(e))),
+                          );
+                        }
+                      }
+                    },
+                  ).animate().fadeIn(duration: 400.ms, delay: (e.key * 40).ms),
+                ),
               ],
               if (watched.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _SectionLabel(label: 'Watched (${watched.length})'),
                 const SizedBox(height: 8),
-                ...watched.asMap().entries.map((e) => _MovieCard(
-                  movie: e.value,
-                  onToggle: () async {
-                    await ref.read(sanityRepositoryProvider)
-                        .setWatched(e.value['_id'] as String, false);
-                    ref.invalidate(watchlistProvider);
-                  },
-                  onDelete: () async {
-                    await ref.read(sanityRepositoryProvider)
-                        .deleteDocument(e.value['_id'] as String);
-                    ref.invalidate(watchlistProvider);
-                  },
-                ).animate().fadeIn(duration: 400.ms, delay: (e.key * 40).ms)),
+                ...watched.asMap().entries.map(
+                  (e) => _MovieCard(
+                    movie: e.value,
+                    onToggle: () async {
+                      try {
+                        await ref
+                            .read(sanityRepositoryProvider)
+                            .setWatched(e.value['_id'] as String, false);
+                        ref.invalidate(watchlistProvider);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(sanityErrorMessage(e))),
+                          );
+                        }
+                      }
+                    },
+                    onDelete: () async {
+                      try {
+                        await ref
+                            .read(sanityRepositoryProvider)
+                            .deleteDocument(e.value['_id'] as String);
+                        ref.invalidate(watchlistProvider);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(sanityErrorMessage(e))),
+                          );
+                        }
+                      }
+                    },
+                  ).animate().fadeIn(duration: 400.ms, delay: (e.key * 40).ms),
+                ),
               ],
             ],
           );
         },
         loading: () => ListView(
           padding: EdgeInsets.fromLTRB(20, topPad, 20, 24),
-          children: List.generate(4, (i) => const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: SkeletonLoader(height: 76),
-          )),
+          children: List.generate(
+            4,
+            (i) => const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: SkeletonLoader(height: 76),
+            ),
+          ),
         ),
-        error: (err, _) => _ErrorState(error: err.toString()),
+        error: (err, _) => _ErrorState(
+          title: 'Could not load watchlist',
+          error: err,
+          onRetry: () => ref.invalidate(watchlistProvider),
+        ),
       ),
     );
   }
@@ -687,7 +885,9 @@ class _MovieCard extends StatelessWidget {
     final isWatched = movie['isWatched'] as bool? ?? false;
     final rating = (movie['rating'] as num?)?.toInt() ?? 0;
     final addedBy = movie['addedBy'] as String? ?? '';
-    final accentColor = isWatched ? AppColors.pastelMint : AppColors.pastelLavender;
+    final accentColor = isWatched
+        ? AppColors.pastelMint
+        : AppColors.pastelLavender;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -723,7 +923,10 @@ class _MovieCard extends StatelessWidget {
                     movie['title'] as String? ?? 'Untitled',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       decoration: isWatched ? TextDecoration.lineThrough : null,
-                      color: isWatched ? AppColors.textMuted : AppColors.textPrimary,
+                      color: isWatched
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -732,7 +935,11 @@ class _MovieCard extends StatelessWidget {
                       if (addedBy.isNotEmpty) ...[
                         Text(
                           'by $addedBy',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -743,7 +950,9 @@ class _MovieCard extends StatelessWidget {
                             (i) => Icon(
                               Icons.star_rounded,
                               size: 12,
-                              color: i < rating ? Colors.amber : Colors.grey.shade300,
+                              color: i < rating
+                                  ? Colors.amber
+                                  : Colors.grey.shade300,
                             ),
                           ),
                         ),
@@ -788,14 +997,19 @@ class _AddImageSheetState extends State<_AddImageSheet> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (picked != null) setState(() => _pickedFile = File(picked.path));
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: PastelCard(
         margin: const EdgeInsets.all(16),
         child: Column(
@@ -805,9 +1019,14 @@ class _AddImageSheetState extends State<_AddImageSheet> {
             const SizedBox(height: 8),
             _BottomSheetHandle(),
             const SizedBox(height: 16),
-            Text('Share a Photo',
-                style: Theme.of(context).textTheme.titleSmall,
-                textAlign: TextAlign.center),
+            Text(
+              'Share a Photo',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
             GestureDetector(
               onTap: _pickImage,
@@ -831,7 +1050,8 @@ class _AddImageSheetState extends State<_AddImageSheet> {
                         children: [
                           Image.file(_pickedFile!, fit: BoxFit.cover),
                           Positioned(
-                            top: 8, right: 8,
+                            top: 8,
+                            right: 8,
                             child: GestureDetector(
                               onTap: _pickImage,
                               child: Container(
@@ -839,7 +1059,12 @@ class _AddImageSheetState extends State<_AddImageSheet> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   shape: BoxShape.circle,
-                                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 4,
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(LucideIcons.pencil, size: 14),
                               ),
@@ -850,10 +1075,20 @@ class _AddImageSheetState extends State<_AddImageSheet> {
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(LucideIcons.imagePlus, size: 32, color: AppColors.pastelPeach),
+                          Icon(
+                            LucideIcons.imagePlus,
+                            size: 32,
+                            color: AppColors.pastelPeach,
+                          ),
                           const SizedBox(height: 8),
-                          Text('Tap to choose a photo',
-                              style: Theme.of(context).textTheme.bodySmall),
+                          Text(
+                            'Tap to choose a photo',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
                         ],
                       ),
               ),
@@ -907,7 +1142,9 @@ class _AddNoteSheetState extends State<_AddNoteSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: PastelCard(
         margin: const EdgeInsets.all(16),
         child: Column(
@@ -917,9 +1154,14 @@ class _AddNoteSheetState extends State<_AddNoteSheet> {
             const SizedBox(height: 8),
             _BottomSheetHandle(),
             const SizedBox(height: 16),
-            Text('A note from ${widget.author}',
-                style: Theme.of(context).textTheme.titleSmall,
-                textAlign: TextAlign.center),
+            Text(
+              'A note from ${widget.author}',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
             _SheetTextField(controller: _titleCtrl, hint: 'Title'),
             const SizedBox(height: 12),
@@ -971,7 +1213,9 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: PastelCard(
         margin: const EdgeInsets.all(16),
         child: Column(
@@ -981,13 +1225,23 @@ class _AddMovieSheetState extends State<_AddMovieSheet> {
             const SizedBox(height: 8),
             _BottomSheetHandle(),
             const SizedBox(height: 16),
-            Text('Add to Watchlist',
-                style: Theme.of(context).textTheme.titleSmall,
-                textAlign: TextAlign.center),
+            Text(
+              'Add to Watchlist',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text('Added by ${widget.author}',
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center),
+            Text(
+              'Added by ${widget.author}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
             _SheetTextField(
               controller: _titleCtrl,
@@ -1062,8 +1316,16 @@ class _SheetTextFieldState extends State<_SheetTextField> {
       controller: widget.controller,
       maxLines: widget.maxLines,
       autofocus: widget.autofocus,
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: InputDecoration(
         hintText: widget.hint,
+        hintStyle: const TextStyle(
+          color: AppColors.textMuted,
+          fontWeight: FontWeight.w500,
+        ),
         filled: true,
         fillColor: AppColors.appBackground,
         border: OutlineInputBorder(
@@ -1078,7 +1340,10 @@ class _SheetTextFieldState extends State<_SheetTextField> {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.pastelPink, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -1105,6 +1370,7 @@ class _SubmitButton extends StatelessWidget {
         backgroundColor: AppColors.pastelPink,
         foregroundColor: Colors.white,
         disabledBackgroundColor: AppColors.disabled,
+        disabledForegroundColor: AppColors.textSecondary,
         minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 0,
@@ -1113,9 +1379,15 @@ class _SubmitButton extends StatelessWidget {
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
             )
-          : Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          : Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
     );
   }
 }
@@ -1177,24 +1449,35 @@ class _EmptyState extends StatelessWidget {
       child: SizedBox(
         height: MediaQuery.of(context).size.height - topPad - 100,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.pastelPink.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 36, color: AppColors.pastelPink.withValues(alpha: 0.4)),
-              ),
-              const SizedBox(height: 16),
-              Text(message, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              Text(sub, style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.96, 0.96)),
+          child:
+              Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.pastelPink.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 36,
+                          color: AppColors.pastelPink.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        message,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(sub, style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  )
+                  .animate()
+                  .fadeIn(duration: 500.ms)
+                  .scale(begin: const Offset(0.96, 0.96)),
         ),
       ),
     );
@@ -1202,27 +1485,19 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error});
-  final String error;
+  const _ErrorState({
+    required this.title,
+    required this.error,
+    required this.onRetry,
+  });
+
+  final String title;
+  final Object error;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(LucideIcons.wifiOff, size: 40, color: AppColors.textMuted),
-            const SizedBox(height: 12),
-            Text('Could not connect',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.textMuted)),
-            const SizedBox(height: 8),
-            Text('Pull to refresh', style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-      ),
-    );
+    return SanityErrorState(title: title, error: error, onRetry: onRetry);
   }
 }
 

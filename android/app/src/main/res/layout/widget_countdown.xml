@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/widget_icon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/ic_paradise"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Paradise"
+        android:textColor="@color/mimi_blue"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:layout_toEndOf="@id/widget_icon"
+        android:layout_marginStart="6dp"
+        android:layout_alignTop="@id/widget_icon" />
+
+    <TextView
+        android:id="@+id/widget_countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="---"
+        android:textColor="@color/text_white"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_centerInParent="true" />
+
+    <TextView
+        android:id="@+id/widget_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Days to Seychelles"
+        android:textColor="@color/text_gray"
+        android:textSize="11sp"
+        android:layout_below="@id/widget_countdown"
+        android:layout_centerHorizontal="true" />
+
+</RelativeLayout>

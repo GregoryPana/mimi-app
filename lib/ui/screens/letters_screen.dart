@@ -31,9 +31,7 @@ class LettersScreen extends ConsumerWidget {
         child: contentAsync.when(
           data: (content) {
             if (content.letters.isEmpty) {
-              return const Center(
-                child: Text('No letters yet 💌'),
-              );
+              return const Center(child: Text('No letters yet 💌'));
             }
             return _LettersList(letters: content.letters);
           },
@@ -92,7 +90,11 @@ class _LettersList extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(LucideIcons.mail, size: 22, color: AppColors.textPrimary),
+                child: const Icon(
+                  LucideIcons.mail,
+                  size: 22,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -101,14 +103,15 @@ class _LettersList extends StatelessWidget {
                   Text(
                     '${letters.length} Valentines Letters',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
                     'Looking back at our countdown 💕',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -135,7 +138,9 @@ class _LetterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Alternate between pink and lavender card accents
     final isPink = index.isEven;
-    final accentColor = isPink ? AppColors.pastelPink : AppColors.pastelLavender;
+    final accentColor = isPink
+        ? AppColors.pastelPink
+        : AppColors.pastelLavender;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -148,6 +153,11 @@ class _LetterCard extends StatelessWidget {
           );
         },
         child: PastelCard(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFFAFC), Color(0xFFFFF2F7)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -165,15 +175,15 @@ class _LetterCard extends StatelessWidget {
                     Text(
                       'Days',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 9,
-                          ),
+                        color: AppColors.textSecondary,
+                        fontSize: 9,
+                      ),
                     ),
                     Text(
                       '${14 - letter.dayIndex}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -187,15 +197,16 @@ class _LetterCard extends StatelessWidget {
                     Text(
                       '${14 - letter.dayIndex} Days Before 💌',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _preview(letter.text),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -210,7 +221,11 @@ class _LetterCard extends StatelessWidget {
                   color: accentColor.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                child: const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -275,7 +290,10 @@ class _LetterReaderScreen extends StatelessWidget {
                 // Letter header
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(colors: gradient),
                       borderRadius: BorderRadius.circular(20),
@@ -283,21 +301,26 @@ class _LetterReaderScreen extends StatelessWidget {
                     child: Text(
                       '💌 $daysBefore Days Before',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 // Letter body
                 PastelCard(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFFAFC), Color(0xFFFFF2F7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   padding: const EdgeInsets.all(20),
                   child: SelectableText(
                     letter.text,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          height: 1.7,
-                          color: AppColors.textPrimary,
-                        ),
+                      height: 1.7,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -306,9 +329,9 @@ class _LetterReaderScreen extends StatelessWidget {
                   child: Text(
                     'With all my love ❤️',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: AppColors.textSecondary,
-                        ),
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],

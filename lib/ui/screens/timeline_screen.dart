@@ -145,8 +145,21 @@ class _TimelineList extends StatelessWidget {
   }
 
   String _monthName(int month) {
-    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     if (month >= 1 && month <= 12) return months[month];
     return '$month';
   }
@@ -155,13 +168,25 @@ class _TimelineList extends StatelessWidget {
   Widget build(BuildContext context) {
     final entries = _buildEntries();
     final total = entries.length;
+    final cardTitleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      color: AppColors.textPrimary,
+      fontWeight: FontWeight.w700,
+    );
+    final cardDateStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: AppColors.textSecondary,
+      fontWeight: FontWeight.w600,
+    );
+    final cardBodyStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: AppColors.textSecondary,
+      fontWeight: FontWeight.w500,
+      height: 1.6,
+    );
 
     return Column(
       children: List.generate(total, (index) {
         final entry = entries[index];
         final isFirst = index == 0;
         final isLast = index == total - 1;
-        final duration = Duration(milliseconds: 300 + (index * 50));
 
         // ── Year Header ──
         if (entry.yearHeader != null) {
@@ -170,7 +195,10 @@ class _TimelineList extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [AppColors.pastelPink, AppColors.pastelLavender],
@@ -180,9 +208,9 @@ class _TimelineList extends StatelessWidget {
                   child: Text(
                     entry.yearHeader!,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -204,13 +232,13 @@ class _TimelineList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Finish', style: Theme.of(context).textTheme.titleMedium),
+                Text('Finish', style: cardTitleStyle),
                 const SizedBox(height: 8),
                 Text(
                   timelineCompleted
                       ? 'Story completed. Thank you, my love. ❤️'
                       : 'When you reach the end, mark it complete.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: cardBodyStyle,
                 ),
                 const SizedBox(height: 12),
                 PrimaryButton(
@@ -243,84 +271,82 @@ class _TimelineList extends StatelessWidget {
                       ),
                     ),
                   ),
-                Text(item.title, style: Theme.of(context).textTheme.titleMedium),
+                Text(item.title, style: cardTitleStyle),
                 const SizedBox(height: 6),
-                if (item.date != null)
-                  Text(item.date!, style: Theme.of(context).textTheme.bodySmall),
+                if (item.date != null) Text(item.date!, style: cardDateStyle),
                 const SizedBox(height: 10),
-                Text(item.text, style: Theme.of(context).textTheme.bodyMedium),
+                Text(item.text, style: cardBodyStyle),
               ],
             ),
           );
         }
 
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: duration,
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 12 * (1 - value)),
-                child: child,
-              ),
-            );
-          },
-          child: TimelineTile(
-            alignment: TimelineAlign.manual,
-            lineXY: 0.24,
-            isFirst: isFirst && entry.yearHeader == null,
-            isLast: isLast,
-            beforeLineStyle: const LineStyle(
-              color: AppColors.pastelLavender,
-              thickness: 2,
-            ),
-            afterLineStyle: const LineStyle(
-              color: AppColors.pastelPink,
-              thickness: 2,
-            ),
-            indicatorStyle: entry.yearHeader != null
-                ? const IndicatorStyle(width: 0, height: 0)
-                : IndicatorStyle(
-                    width: 18,
-                    height: 18,
-                    color: entry.isFinish ? AppColors.pastelPink : AppColors.pastelLavender,
-                    iconStyle: entry.isFinish
-                        ? IconStyle(iconData: Icons.favorite, color: AppColors.textPrimary)
-                        : null,
-                  ),
-            startChild: entry.yearHeader != null || entry.isFinish
-                ? const SizedBox.shrink()
-                : Padding(
-                    padding: const EdgeInsets.only(top: 6, right: 16),
-                    child: SizedBox(
-                      width: 86,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(12),
+        return TimelineTile(
+          alignment: TimelineAlign.manual,
+          lineXY: 0.24,
+          isFirst: isFirst && entry.yearHeader == null,
+          isLast: isLast,
+          beforeLineStyle: const LineStyle(
+            color: AppColors.pastelLavender,
+            thickness: 2,
+          ),
+          afterLineStyle: const LineStyle(
+            color: AppColors.pastelPink,
+            thickness: 2,
+          ),
+          indicatorStyle: entry.yearHeader != null
+              ? const IndicatorStyle(width: 0, height: 0)
+              : IndicatorStyle(
+                  width: 18,
+                  height: 18,
+                  color: entry.isFinish
+                      ? AppColors.pastelPink
+                      : AppColors.pastelLavender,
+                  iconStyle: entry.isFinish
+                      ? IconStyle(
+                          iconData: Icons.favorite,
+                          color: AppColors.textPrimary,
+                        )
+                      : null,
+                ),
+          startChild: entry.yearHeader != null || entry.isFinish
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(top: 6, right: 16),
+                  child: SizedBox(
+                    width: 86,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _formatDate(entry.item?.date),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textPrimary,
                         ),
-                        child: Text(
-                          _formatDate(entry.item?.date),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                          textAlign: TextAlign.right,
-                        ),
+                        textAlign: TextAlign.right,
                       ),
                     ),
                   ),
-            endChild: entry.yearHeader != null
-                ? const SizedBox.shrink()
-                : Padding(
-                    padding: const EdgeInsets.only(left: 12, right: 24, bottom: 20),
-                    child: FractionallySizedBox(
-                      widthFactor: 0.92,
-                      child: content,
-                    ),
+                ),
+          endChild: entry.yearHeader != null
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(
+                    left: 12,
+                    right: 24,
+                    bottom: 20,
                   ),
-          ),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.92,
+                    child: content,
+                  ),
+                ),
         );
       }),
     );

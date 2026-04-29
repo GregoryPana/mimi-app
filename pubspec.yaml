@@ -39,7 +39,7 @@ dependencies:
   intl: ^0.19.0
   lucide_icons: ^0.257.0
   pdfx: ^2.7.0
-  shared_preferences: ^2.3.2
+  shared_preferences: ^2.5.5
   timeline_tile: ^2.0.0
   flutter_countdown_timer: ^4.1.0
   flutter_animate: ^4.5.0
@@ -55,6 +55,8 @@ dependencies:
   audio_video_progress_bar: ^2.0.1
   cached_network_image: ^3.4.1
   http: ^1.2.1
+  file_picker: ^8.1.2
+  home_widget: ^0.9.1
 
 dev_dependencies:
   flutter_test:

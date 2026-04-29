@@ -50,7 +50,9 @@ class _ComicsScreenState extends ConsumerState<ComicsScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref.read(progressControllerProvider.notifier).updateLastViewedSection('comic');
+        ref
+            .read(progressControllerProvider.notifier)
+            .updateLastViewedSection('comic');
       }
     });
   }
@@ -106,6 +108,14 @@ class _ComicsList extends ConsumerWidget {
     final lastComicId = progress?.lastViewedComicId;
 
     final topPad = MediaQuery.of(context).padding.top + kToolbarHeight;
+    final headingStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
+      color: AppColors.textPrimary,
+      fontWeight: FontWeight.w700,
+    );
+    final subheadingStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: AppColors.textSecondary,
+      fontWeight: FontWeight.w600,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,13 +130,16 @@ class _ComicsList extends ConsumerWidget {
             children: [
               Text(
                 'Our Comics',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: headingStyle,
               ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.04),
               const SizedBox(height: 4),
               Text(
-                '${comics.length} stories just for us.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ).animate(delay: 80.ms).fadeIn(duration: 400.ms).slideX(begin: -0.04),
+                    '${comics.length} stories just for us.',
+                    style: subheadingStyle,
+                  )
+                  .animate(delay: 80.ms)
+                  .fadeIn(duration: 400.ms)
+                  .slideX(begin: -0.04),
             ],
           ),
         ),
@@ -143,33 +156,41 @@ class _ComicsList extends ConsumerWidget {
               final comic = comics[index];
               final isCurrent = (currentPage - index).abs() < 0.5;
               final isContinue = comic.id == lastComicId;
-              final lastPage = isContinue ? (progress?.lastViewedComicPage ?? 0) : 0;
+              final lastPage = isContinue
+                  ? (progress?.lastViewedComicPage ?? 0)
+                  : 0;
 
-              final scale = (1 - (currentPage - index).abs() * 0.08).clamp(0.88, 1.0);
+              final scale = (1 - (currentPage - index).abs() * 0.08).clamp(
+                0.88,
+                1.0,
+              );
 
               return Transform.scale(
                 scale: scale,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: _ComicCard(
-                    comic: comic,
-                    index: index,
-                    isCurrent: isCurrent,
-                    isContinue: isContinue,
-                    lastPage: lastPage,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ComicViewerScreen(
-                            item: comic,
-                            initialPage: isContinue ? lastPage : 0,
-                          ),
-                        ),
-                      );
-                    },
-                  ).animate().fadeIn(duration: 500.ms, delay: (index * 80).ms)
-                   .slideY(begin: 0.06, end: 0, curve: Curves.easeOut),
+                  child:
+                      _ComicCard(
+                            comic: comic,
+                            index: index,
+                            isCurrent: isCurrent,
+                            isContinue: isContinue,
+                            lastPage: lastPage,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ComicViewerScreen(
+                                    item: comic,
+                                    initialPage: isContinue ? lastPage : 0,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                          .animate()
+                          .fadeIn(duration: 500.ms, delay: (index * 80).ms)
+                          .slideY(begin: 0.06, end: 0, curve: Curves.easeOut),
                 ),
               );
             },
@@ -199,7 +220,10 @@ class _ComicsList extends ConsumerWidget {
         Center(
           child: Text(
             'Swipe to browse',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -224,12 +248,18 @@ class _ComicCard extends StatelessWidget {
   final int lastPage;
   final VoidCallback onTap;
 
-  List<Color> get _gradient => _kCoverGradients[index % _kCoverGradients.length];
+  List<Color> get _gradient =>
+      _kCoverGradients[index % _kCoverGradients.length];
   IconData get _icon => _kCoverIcons[index % _kCoverIcons.length];
 
   @override
   Widget build(BuildContext context) {
     return PastelCard(
+      gradient: const LinearGradient(
+        colors: [Color(0xFFFFF9FC), Color(0xFFFFF2F8)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -238,7 +268,9 @@ class _ComicCard extends StatelessWidget {
           Expanded(
             flex: 5,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -310,7 +342,10 @@ class _ComicCard extends StatelessWidget {
                       top: 12,
                       right: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(20),
@@ -325,7 +360,11 @@ class _ComicCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.bookmark, size: 12, color: _gradient[0]),
+                            Icon(
+                              LucideIcons.bookmark,
+                              size: 12,
+                              color: _gradient[0],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'p.$lastPage',
@@ -354,7 +393,10 @@ class _ComicCard extends StatelessWidget {
                 children: [
                   Text(
                     comic.title,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -364,7 +406,7 @@ class _ComicCard extends StatelessWidget {
                       Text(
                         isContinue ? 'Continue reading' : 'Start reading',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: _gradient[0],
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -372,7 +414,10 @@ class _ComicCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onTap,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(colors: _gradient),
                             borderRadius: BorderRadius.circular(20),
@@ -388,7 +433,9 @@ class _ComicCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                isContinue ? LucideIcons.play : LucideIcons.arrowRight,
+                                isContinue
+                                    ? LucideIcons.play
+                                    : LucideIcons.arrowRight,
                                 size: 14,
                                 color: Colors.white,
                               ),
@@ -430,9 +477,7 @@ class _LoadingState extends StatelessWidget {
           const SizedBox(height: 8),
           const SkeletonLoader(height: 16, width: 220),
           const SizedBox(height: 32),
-          Expanded(
-            child: Center(child: const SkeletonLoader()),
-          ),
+          Expanded(child: Center(child: const SkeletonLoader())),
         ],
       ),
     );
@@ -467,7 +512,9 @@ class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
 
   void _onPageChanged() {
     final page = _controller.pageListenable.value;
-    ref.read(progressControllerProvider.notifier).updateLastComicProgress(widget.item.id, page);
+    ref
+        .read(progressControllerProvider.notifier)
+        .updateLastComicProgress(widget.item.id, page);
   }
 
   @override
@@ -516,7 +563,9 @@ class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
                   0,
-                  _uiVisible ? MediaQuery.of(context).padding.top + kToolbarHeight : 0,
+                  _uiVisible
+                      ? MediaQuery.of(context).padding.top + kToolbarHeight
+                      : 0,
                   0,
                   _uiVisible ? 72 : 0,
                 ),
@@ -530,11 +579,18 @@ class _ComicViewerScreenState extends ConsumerState<ComicViewerScreen> {
                       return PhotoViewGalleryPageOptions.customChild(
                         child: Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image(
-                                image: PdfPageImageProvider(pageImage, index, document.id),
+                                image: PdfPageImageProvider(
+                                  pageImage,
+                                  index,
+                                  document.id,
+                                ),
                                 fit: BoxFit.contain,
                                 filterQuality: FilterQuality.high,
                               ),
@@ -625,7 +681,9 @@ class _PageBar extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress.clamp(0.0, 1.0),
                       backgroundColor: Colors.white.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.pastelPink),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.pastelPink,
+                      ),
                       minHeight: 4,
                     ),
                   ),

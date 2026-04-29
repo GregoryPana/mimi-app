@@ -1,5 +1,12 @@
 # Mimi App Changes
 
+### [2026-04-29] - Home Screen Widgets Refinement
+- **Size Locking**: Enforced 4x4 grid size for Packing/Itinerary lists and 2x2 for Countdown/Us/Memory cards using `targetCellWidth` and `targetCellHeight`.
+- **Data Persistence**: Fixed SharedPreferences naming mismatch (`HomeWidgetPreferences`) to ensure list data correctly displays when the app is closed.
+- **Background Interactivity**: Split packing item click zones. Clicking the checkbox toggles state in a background isolate (Sanity CMS) without opening the app, while clicking the text deep-links to the Seychelles Packing tab.
+- **Deep Linking**: Implemented `HomeWidget` URI listener in `main.dart` and updated `SeychellesScreen` to support programmatically selecting the correct tab on launch.
+- **Robustness**: Enhanced background callback with logging and propagation delays to ensure the widget reflects the latest cloud state reliably.
+
 ### [2026-04-24] - Shared Memory Hub Stabilization & UI Refinement
 
 #### Improved

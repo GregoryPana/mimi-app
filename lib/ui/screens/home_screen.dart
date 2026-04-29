@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -57,10 +56,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.appBackground,
       body: contentAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.pastelPink)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.pastelPink),
+        ),
         error: (e, _) => Center(child: Text('Something went wrong 💔\n$e')),
         data: (content) {
-          final progress = progressAsync.valueOrNull ?? AppProgressState.initial();
+          final progress =
+              progressAsync.valueOrNull ?? AppProgressState.initial();
           return _HomeBody(content: content, progress: progress);
         },
       ),
@@ -131,12 +133,13 @@ class _HomeBody extends ConsumerWidget {
                     // Seychelles teaser — prominent when trip is near
                     if (showSeychellesTeaser) ...[
                       _SeychellesTeaser(
-                        daysLeft: daysToFlight,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (_) => const SeychellesScreen()),
-                        ),
-                      )
+                            daysLeft: daysToFlight,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SeychellesScreen(),
+                              ),
+                            ),
+                          )
                           .animate(delay: 120.ms)
                           .fadeIn(duration: 400.ms)
                           .slideY(begin: 0.04, end: 0, curve: Curves.easeOut),
@@ -190,10 +193,7 @@ class _HomeBody extends ConsumerWidget {
               ],
 
               // Continue reading
-              SectionHeader(
-                icon: LucideIcons.clock,
-                label: 'Continue reading',
-              ),
+              SectionHeader(icon: LucideIcons.clock, label: 'Continue reading'),
               _buildContinueSection(context)
                   .animate(delay: 260.ms)
                   .fadeIn(duration: 400.ms)
@@ -202,9 +202,10 @@ class _HomeBody extends ConsumerWidget {
 
               // Quick Actions
               SectionHeader(icon: LucideIcons.grid, label: 'Explore'),
-              _buildQuickActionsGrid(context, ref)
-                  .animate(delay: 320.ms)
-                  .fadeIn(duration: 400.ms),
+              _buildQuickActionsGrid(
+                context,
+                ref,
+              ).animate(delay: 320.ms).fadeIn(duration: 400.ms),
               const SizedBox(height: 28),
 
               // Mood
@@ -221,15 +222,45 @@ class _HomeBody extends ConsumerWidget {
 
   // ── Pinned shortcuts ───────────────────────────────────────────────────────
 
-  Widget _buildPinnedShortcuts(BuildContext context, AppProgressState progress) {
+  Widget _buildPinnedShortcuts(
+    BuildContext context,
+    AppProgressState progress,
+  ) {
     final allFeatures = [
-      PinnedFeature(id: 'gallery', label: 'Memories', icon: LucideIcons.image, color: AppColors.pastelLavender),
-      PinnedFeature(id: 'timeline', label: 'Timeline', icon: LucideIcons.calendar, color: AppColors.pastelPeach),
-      PinnedFeature(id: 'letters', label: 'Letters', icon: LucideIcons.mail, color: AppColors.pastelPink),
-      PinnedFeature(id: 'comics', label: 'Comics', icon: LucideIcons.bookOpen, color: AppColors.pastelMint),
-      PinnedFeature(id: 'seychelles', label: 'Trip', icon: LucideIcons.plane, color: AppColors.pastelBlue),
+      PinnedFeature(
+        id: 'gallery',
+        label: 'Memories',
+        icon: LucideIcons.image,
+        color: AppColors.pastelLavender,
+      ),
+      PinnedFeature(
+        id: 'timeline',
+        label: 'Timeline',
+        icon: LucideIcons.calendar,
+        color: AppColors.pastelPeach,
+      ),
+      PinnedFeature(
+        id: 'letters',
+        label: 'Letters',
+        icon: LucideIcons.mail,
+        color: AppColors.pastelPink,
+      ),
+      PinnedFeature(
+        id: 'comics',
+        label: 'Comics',
+        icon: LucideIcons.bookOpen,
+        color: AppColors.pastelMint,
+      ),
+      PinnedFeature(
+        id: 'seychelles',
+        label: 'Trip',
+        icon: LucideIcons.plane,
+        color: AppColors.pastelBlue,
+      ),
     ];
-    final pinned = allFeatures.where((f) => progress.pinnedFeatureIds.contains(f.id)).toList();
+    final pinned = allFeatures
+        .where((f) => progress.pinnedFeatureIds.contains(f.id))
+        .toList();
     return PinnedShortcutBar(
       pinnedItems: pinned,
       onTap: (feature) => _navigateToFeature(context, feature.id),
@@ -239,38 +270,60 @@ class _HomeBody extends ConsumerWidget {
   void _navigateToFeature(BuildContext context, String id) {
     Widget? screen;
     switch (id) {
-      case 'gallery': screen = const GalleryScreen();
-      case 'timeline': screen = const TimelineScreen();
-      case 'letters': screen = const LettersScreen();
-      case 'comics': screen = const ComicsScreen();
-      case 'seychelles': screen = const SeychellesScreen();
+      case 'gallery':
+        screen = const GalleryScreen();
+      case 'timeline':
+        screen = const TimelineScreen();
+      case 'letters':
+        screen = const LettersScreen();
+      case 'comics':
+        screen = const ComicsScreen();
+      case 'seychelles':
+        screen = const SeychellesScreen();
     }
-    if (screen != null) Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
+    if (screen != null) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen!));
+    }
   }
 
   // ── Today card ─────────────────────────────────────────────────────────────
 
-  Widget _buildTodayCard(BuildContext context, TimelineItem event, DateTime now) {
+  Widget _buildTodayCard(
+    BuildContext context,
+    TimelineItem event,
+    DateTime now,
+  ) {
     final parsed = DateHelpers.parseTimelineDate(event.date);
-    final relative = parsed != null ? DateHelpers.relativeTimeText(parsed, now) : '';
+    final relative = parsed != null
+        ? DateHelpers.relativeTimeText(parsed, now)
+        : '';
     return TodayCard(
       title: event.title,
       relativeText: relative,
       imageAsset: event.imageAsset,
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TimelineScreen())),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const TimelineScreen())),
     );
   }
 
   // ── Featured memory ────────────────────────────────────────────────────────
 
-  Widget _buildFeaturedMemory(BuildContext context, WidgetRef ref, GalleryItem item) {
+  Widget _buildFeaturedMemory(
+    BuildContext context,
+    WidgetRef ref,
+    GalleryItem item,
+  ) {
     final isFav = progress.favoriteIds.contains(item.id);
     return FeaturedMemoryCard(
       imageAsset: item.imageAsset,
       caption: item.caption,
       isFavorited: isFav,
-      onFavoriteTap: () => ref.read(progressControllerProvider.notifier).toggleFavorite(item.id),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GalleryScreen())),
+      onFavoriteTap: () =>
+          ref.read(progressControllerProvider.notifier).toggleFavorite(item.id),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const GalleryScreen())),
     );
   }
 
@@ -285,29 +338,43 @@ class _HomeBody extends ConsumerWidget {
         detail: folder != null ? 'Resume viewing' : 'Discover memories',
         icon: LucideIcons.image,
         backgroundColor: AppColors.pastelLavender,
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GalleryScreen())),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const GalleryScreen())),
       );
     }
 
     final lastComicId = progress.lastViewedComicId;
     final lastComicPage = progress.lastViewedComicPage;
     final lastComic = lastComicId != null
-        ? content.comics.cast<ComicItem?>().firstWhere((c) => c?.id == lastComicId, orElse: () => null)
+        ? content.comics.cast<ComicItem?>().firstWhere(
+            (c) => c?.id == lastComicId,
+            orElse: () => null,
+          )
         : null;
 
     return ContinueCard(
       title: 'Comics',
       subtitle: lastComic?.title.split('—').last.trim() ?? 'Start reading',
-      detail: lastComicId != null ? 'Page ${lastComicPage + 1}' : 'Discover story',
+      detail: lastComicId != null
+          ? 'Page ${lastComicPage + 1}'
+          : 'Discover story',
       icon: LucideIcons.bookOpen,
       backgroundColor: AppColors.pastelPeach,
       onTap: () {
         if (lastComic != null) {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ComicViewerScreen(item: lastComic, initialPage: lastComicPage),
-          ));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ComicViewerScreen(
+                item: lastComic,
+                initialPage: lastComicPage,
+              ),
+            ),
+          );
         } else {
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ComicsScreen()));
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const ComicsScreen()));
         }
       },
     );
@@ -317,27 +384,40 @@ class _HomeBody extends ConsumerWidget {
 
   Widget _buildQuickActionsGrid(BuildContext context, WidgetRef ref) {
     bool isPinned(String id) => progress.pinnedFeatureIds.contains(id);
-    void toggle(String id) => ref.read(progressControllerProvider.notifier).togglePinnedFeature(id);
+    void toggle(String id) =>
+        ref.read(progressControllerProvider.notifier).togglePinnedFeature(id);
 
     final tiles = [
       _TileData(
-        id: 'gallery', icon: LucideIcons.image, color: AppColors.pastelLavender,
-        title: AppConfig.memoriesLabel, subtitle: AppConfig.memoriesSubtitle,
+        id: 'gallery',
+        icon: LucideIcons.image,
+        color: AppColors.pastelLavender,
+        title: AppConfig.memoriesLabel,
+        subtitle: AppConfig.memoriesSubtitle,
         screen: const GalleryScreen(),
       ),
       _TileData(
-        id: 'timeline', icon: LucideIcons.calendar, color: AppColors.pastelPeach,
-        title: AppConfig.timelineLabel, subtitle: AppConfig.timelineSubtitle,
+        id: 'timeline',
+        icon: LucideIcons.calendar,
+        color: AppColors.pastelPeach,
+        title: AppConfig.timelineLabel,
+        subtitle: AppConfig.timelineSubtitle,
         screen: const TimelineScreen(),
       ),
       _TileData(
-        id: 'letters', icon: LucideIcons.mail, color: AppColors.pastelPink,
-        title: AppConfig.lettersLabel, subtitle: AppConfig.lettersSubtitle,
+        id: 'letters',
+        icon: LucideIcons.mail,
+        color: AppColors.pastelPink,
+        title: AppConfig.lettersLabel,
+        subtitle: AppConfig.lettersSubtitle,
         screen: const LettersScreen(),
       ),
       _TileData(
-        id: 'comics', icon: LucideIcons.bookOpen, color: AppColors.pastelMint,
-        title: AppConfig.comicsLabel, subtitle: AppConfig.comicsSubtitle,
+        id: 'comics',
+        icon: LucideIcons.bookOpen,
+        color: AppColors.pastelMint,
+        title: AppConfig.comicsLabel,
+        subtitle: AppConfig.comicsSubtitle,
         screen: const ComicsScreen(),
       ),
     ];
@@ -355,15 +435,17 @@ class _HomeBody extends ConsumerWidget {
           children: tiles.asMap().entries.map((e) {
             final tile = e.value;
             return QuickActionTile(
-              icon: tile.icon,
-              iconColor: tile.color,
-              backgroundColor: tile.color,
-              title: tile.title,
-              subtitle: tile.subtitle,
-              isPinned: isPinned(tile.id),
-              onPinToggle: () => toggle(tile.id),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => tile.screen)),
-            )
+                  icon: tile.icon,
+                  iconColor: tile.color,
+                  backgroundColor: tile.color,
+                  title: tile.title,
+                  subtitle: tile.subtitle,
+                  isPinned: isPinned(tile.id),
+                  onPinToggle: () => toggle(tile.id),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => tile.screen)),
+                )
                 .animate(delay: (e.key * 50).ms)
                 .fadeIn(duration: 300.ms)
                 .scale(begin: const Offset(0.96, 0.96));
@@ -374,10 +456,12 @@ class _HomeBody extends ConsumerWidget {
 
         // Seychelles — full-width accent tile
         _SeychellesActionTile(
-          isPinned: isPinned('seychelles'),
-          onPinToggle: () => toggle('seychelles'),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SeychellesScreen())),
-        )
+              isPinned: isPinned('seychelles'),
+              onPinToggle: () => toggle('seychelles'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SeychellesScreen()),
+              ),
+            )
             .animate(delay: 200.ms)
             .fadeIn(duration: 300.ms)
             .scale(begin: const Offset(0.96, 0.96)),
@@ -430,7 +514,9 @@ class _SeychellesTeaser extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDeparted = daysLeft == 0;
-    final label = isDeparted ? "We're flying today! 🎉" : '$daysLeft days to Seychelles';
+    final label = isDeparted
+        ? "We're flying today! 🎉"
+        : '$daysLeft days to Seychelles';
 
     return GestureDetector(
       onTap: onTap,
@@ -475,7 +561,11 @@ class _SeychellesTeaser extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(LucideIcons.planeTakeoff, color: Colors.white, size: 22),
+                    child: const Icon(
+                      LucideIcons.planeTakeoff,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -507,7 +597,11 @@ class _SeychellesTeaser extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.chevron_right, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.chevron_right,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),
@@ -567,7 +661,11 @@ class _SeychellesActionTileState extends State<_SeychellesActionTile> {
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(LucideIcons.plane, color: Colors.white, size: 22),
+                child: const Icon(
+                  LucideIcons.plane,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -596,8 +694,12 @@ class _SeychellesActionTileState extends State<_SeychellesActionTile> {
                 visualDensity: VisualDensity.compact,
                 onPressed: widget.onPinToggle,
                 icon: Icon(
-                  widget.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-                  color: Colors.white.withValues(alpha: widget.isPinned ? 1.0 : 0.6),
+                  widget.isPinned
+                      ? Icons.push_pin_rounded
+                      : Icons.push_pin_outlined,
+                  color: Colors.white.withValues(
+                    alpha: widget.isPinned ? 1.0 : 0.6,
+                  ),
                   size: 20,
                 ),
               ),
@@ -653,7 +755,9 @@ class _HeroHeaderState extends State<_HeroHeader>
   @override
   Widget build(BuildContext context) {
     final diff = _RelationshipDuration.from(
-        AppConfig.relationshipStart, widget.now);
+      AppConfig.relationshipStart,
+      widget.now,
+    );
     final name = _names[_nameIndex];
     final message = _messages[widget.now.dayOfYear % _messages.length];
 
@@ -692,7 +796,9 @@ class _HeroHeaderState extends State<_HeroHeader>
                           'Good ${_timeOfDay(widget.now)},',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary.withValues(alpha: 0.8),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.8,
+                            ),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -715,7 +821,7 @@ class _HeroHeaderState extends State<_HeroHeader>
                     builder: (_, __) {
                       final double value = _heartCtrl.value;
                       double scale = 1.0;
-                      
+
                       // Double pulse heartbeat logic
                       if (value < 0.15) {
                         scale = 1.0 + (0.18 * (value / 0.15));
@@ -736,13 +842,17 @@ class _HeroHeaderState extends State<_HeroHeader>
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                AppColors.pastelPink.withValues(alpha: 0.28 * (scale - 0.95)),
+                                AppColors.pastelPink.withValues(
+                                  alpha: 0.28 * (scale - 0.95),
+                                ),
                                 AppColors.pastelPink.withValues(alpha: 0.0),
                               ],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.pastelPink.withValues(alpha: 0.12 * (scale - 0.95)),
+                                color: AppColors.pastelPink.withValues(
+                                  alpha: 0.12 * (scale - 0.95),
+                                ),
                                 blurRadius: 12 * scale,
                                 spreadRadius: 1.5 * scale,
                               ),
@@ -753,7 +863,9 @@ class _HeroHeaderState extends State<_HeroHeader>
                             children: [
                               Icon(
                                 Icons.favorite_rounded,
-                                color: AppColors.pastelPink.withValues(alpha: 0.35),
+                                color: AppColors.pastelPink.withValues(
+                                  alpha: 0.35,
+                                ),
                                 size: 28 * scale,
                               ),
                               const Icon(
@@ -774,7 +886,10 @@ class _HeroHeaderState extends State<_HeroHeader>
 
               // Relationship duration counter
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(14),

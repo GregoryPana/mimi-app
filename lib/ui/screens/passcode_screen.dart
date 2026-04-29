@@ -91,13 +91,14 @@ class _PasscodeScreenState extends State<PasscodeScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                       ),
-                      child: const Icon(LucideIcons.lock, size: 32, color: AppColors.pastelLavender),
+                      child: Icon(LucideIcons.lock, size: 32, color: Theme.of(context).primaryColor),
                     ),
                     const SizedBox(height: 24),
                     Text(
                       'Welcome back, Mimi',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w800,
+                        color: Theme.of(context).primaryColor,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -105,7 +106,9 @@ class _PasscodeScreenState extends State<PasscodeScreen> {
                     Text(
                       _error ?? AppConfig.passcodeHint,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: _error != null ? Colors.redAccent : AppColors.textSecondary,
+                        color: _error != null 
+                            ? Colors.redAccent 
+                            : Theme.of(context).primaryColor.withValues(alpha: 0.7),
                         fontWeight: _error != null ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
@@ -125,17 +128,17 @@ class _PasscodeScreenState extends State<PasscodeScreen> {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: filled ? AppColors.pastelLavender : Colors.white.withValues(alpha: 0.2),
+                        color: filled ? Theme.of(context).primaryColor : Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                         boxShadow: filled ? [
                           BoxShadow(
-                            color: AppColors.pastelLavender.withValues(alpha: 0.4),
+                            color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 2,
                           )
                         ] : [],
                         border: Border.all(
-                          color: filled ? AppColors.pastelLavender : Colors.white.withValues(alpha: 0.4),
+                          color: filled ? Theme.of(context).primaryColor : Colors.white.withValues(alpha: 0.4),
                           width: 2,
                         ),
                       ),
@@ -230,11 +233,11 @@ class _KeyButton extends StatelessWidget {
           splashColor: AppColors.pastelLavender.withValues(alpha: 0.2),
           child: Center(
             child: icon != null
-                ? Icon(icon, color: Colors.white, size: 28)
+                ? Icon(icon, color: Theme.of(context).primaryColor, size: 28)
                 : Text(
                     label!,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
                       fontSize: 28,
                       fontWeight: FontWeight.w300,
                     ),

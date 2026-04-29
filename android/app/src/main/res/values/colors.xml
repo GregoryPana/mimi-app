@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mimi_teal">#14A8A4</color>
+    <color name="mimi_pink">#E56B98</color>
+    <color name="mimi_blue">#5AB1F9</color>
+    <color name="mimi_dark">#051937</color>
+    <color name="widget_bg">#1A051937</color>
+    <color name="text_white">#FFFFFF</color>
+    <color name="text_gray">#B3FFFFFF</color>
+</resources>
